@@ -4,6 +4,8 @@ from setuptools import setup, find_packages
 PACKAGE_ROOT = os.path.dirname(os.path.realpath(__file__))
 README_FILE = open(os.path.join(PACKAGE_ROOT, 'README.md'), 'r').read()
 
+# TODO Update install requirements to add transformers
+
 if __name__ == '__main__':
     setup(
         name = 'branchml',
