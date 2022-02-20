@@ -14,14 +14,14 @@ from rootflow.datasets.utils import batch_enumerate, map_functions
 class FunctionalDataset(Dataset):
     def split(
         self, test_proportion: float = 0.1, seed: int = None
-    ) -> Tuple["BranchDatasetView", "BranchDatasetView"]:
+    ) -> Tuple["RootflowDatasetView", "RootflowDatasetView"]:
         dataset_length = len(self)
         indices = list(range(dataset_length))
         random.Random(seed).shuffle(indices)
         n_test = int(dataset_length * test_proportion)
         return (
-            BranchDatasetView(self, indices[n_test:]),
-            BranchDatasetView(self, indices[:n_test]),
+            RootflowDatasetView(self, indices[n_test:]),
+            RootflowDatasetView(self, indices[:n_test]),
         )
 
     def map(
@@ -48,7 +48,7 @@ class FunctionalDataset(Dataset):
         print(self.examples())
 
 
-class BranchDataset(FunctionalDataset):
+class RootflowDataset(FunctionalDataset):
     def __init__(self, root: str = None, download: bool = True) -> None:
         self.DEFAULT_DIRECTORY = f"datasets/{type(self).__name__}/data"
         if root is None:
@@ -135,9 +135,9 @@ class BranchDataset(FunctionalDataset):
     def __getitem__(self, index):
         if isinstance(index, slice):
             data_indices = list(range(len(self))[index])
-            return BranchDatasetView(self, data_indices)
+            return RootflowDatasetView(self, data_indices)
         elif isinstance(index, (tuple, list)):
-            return BranchDatasetView(self, index)
+            return RootflowDatasetView(self, index)
         else:
             if self.labels is None:
                 label = None
@@ -150,8 +150,8 @@ class BranchDataset(FunctionalDataset):
             }
 
 
-class BranchDatasetView(FunctionalDataset):
-    def __init__(self, dataset: BranchDataset, view_indices: List[int]) -> None:
+class RootflowDatasetView(FunctionalDataset):
+    def __init__(self, dataset: RootflowDataset, view_indices: List[int]) -> None:
         self.dataset = dataset
         self.data_indices = view_indices
 
@@ -169,8 +169,8 @@ class BranchDatasetView(FunctionalDataset):
     def __getitem__(self, index):
         if isinstance(index, slice):
             data_indices = list(range(len(self))[index])
-            return BranchDatasetView(self, data_indices)
+            return RootflowDatasetView(self, data_indices)
         elif isinstance(index, (tuple, list)):
-            return BranchDatasetView(self, index)
+            return RootflowDatasetView(self, index)
         else:
             return self.dataset[self.data_indices[index]]

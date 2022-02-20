@@ -1,10 +1,10 @@
 from typing import Tuple
 import pytest
-from rootflow.datasets.base import BranchDataset
+from rootflow.datasets.base import RootflowDataset
 
 
 def test_create_dataset():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]
@@ -22,7 +22,7 @@ def test_create_dataset():
 
 
 def test_create_dataset_no_ids():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]
@@ -39,7 +39,7 @@ def test_create_dataset_no_ids():
 
 
 def test_slice_dataset():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]
@@ -71,7 +71,7 @@ def test_slice_dataset():
 
 
 def test_slice_datset_with_list():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]
@@ -97,7 +97,7 @@ def test_slice_datset_with_list():
 
 
 def test_map_dataset():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]
@@ -115,7 +115,7 @@ def test_map_dataset():
 
 
 def test_transform_dataset():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]
@@ -133,7 +133,7 @@ def test_transform_dataset():
 
 
 def test_split_dataset():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]

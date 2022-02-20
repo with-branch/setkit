@@ -1,10 +1,10 @@
 from typing import Tuple
 import pytest
-from rootflow.datasets.base import BranchDataset, BranchDatasetView
+from rootflow.datasets.base import RootflowDataset, RootflowDatasetView
 
 
 def test_create_dataset_view():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]
@@ -16,7 +16,7 @@ def test_create_dataset_view():
 
     dataset = TestDataset()
     view_indices = [1, 6, 2, 7, 3, 10, 3]
-    dataset_view = BranchDatasetView(dataset, view_indices)
+    dataset_view = RootflowDatasetView(dataset, view_indices)
     assert dataset_view[0]["id"] == "data_item-1"
     assert dataset_view[0]["data"] == 1
     assert dataset_view[0]["label"] == True
@@ -24,7 +24,7 @@ def test_create_dataset_view():
 
 
 def test_create_dataset_view_duplicate_indices():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]
@@ -36,13 +36,13 @@ def test_create_dataset_view_duplicate_indices():
 
     dataset = TestDataset()
     view_indices = [1, 6, 2, 7, 3, 10, 3, 6]
-    dataset_view = BranchDatasetView(dataset, view_indices)
+    dataset_view = RootflowDatasetView(dataset, view_indices)
     with pytest.raises(IndexError):
         dataset_view[7]
 
 
 def test_slice_dataset_view():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 2) == 0 for i in range(100)]
@@ -66,7 +66,7 @@ def test_slice_dataset_view():
 
 
 def test_slice_dataset_view_with_list():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 2) == 0 for i in range(100)]
@@ -91,7 +91,7 @@ def test_slice_dataset_view_with_list():
 
 
 def test_map_dataset_view():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]
@@ -110,7 +110,7 @@ def test_map_dataset_view():
 
 
 def test_transform_dataset_view():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]
@@ -129,7 +129,7 @@ def test_transform_dataset_view():
 
 
 def test_split_dataset_view():
-    class TestDataset(BranchDataset):
+    class TestDataset(RootflowDataset):
         def prepare_data(self, path: str):
             data = [i for i in range(100)]
             labels = [(i % 3) == 1 for i in range(100)]
