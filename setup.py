@@ -8,7 +8,7 @@ README_FILE = open(os.path.join(PACKAGE_ROOT, 'README.md'), 'r').read()
 
 if __name__ == '__main__':
     setup(
-        name = 'branchml',
+        name = 'rootflow',
         version = '0.0.0',
         description = "A framework of models, datasets and other utilities for training branch ML models.",
         long_description = README_FILE,
