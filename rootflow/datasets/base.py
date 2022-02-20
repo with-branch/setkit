@@ -1,7 +1,9 @@
 from typing import Callable, Tuple, List, Union
 import logging
 import random
+import os
 from torch.utils.data import Dataset
+import rootflow
 from rootflow.datasets.utils import batch_enumerate, map_functions
 
 # TODO:
@@ -50,7 +52,9 @@ class FunctionalDataset(Dataset):
 
 class RootflowDataset(FunctionalDataset):
     def __init__(self, root: str = None, download: bool = True) -> None:
-        self.DEFAULT_DIRECTORY = f"datasets/{type(self).__name__}/data"
+        self.DEFAULT_DIRECTORY = os.path.join(
+            rootflow.__location__, "datasets/data", type(self).__name__, "data"
+        )
         if root is None:
             logging.info(
                 f"{type(self).__name__} root is not set, using the default data root of {self.DEFAULT_DIRECTORY}"
@@ -65,6 +69,8 @@ class RootflowDataset(FunctionalDataset):
                 logging.info(
                     f"Downloading {type(self).__name__} data to location {root}."
                 )
+                if not os.path.exists(root):
+                    os.makedirs(root)
                 self.download(root)
                 ids, data, labels = self.prepare_data(root)
             else:
