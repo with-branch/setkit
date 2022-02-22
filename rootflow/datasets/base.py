@@ -113,18 +113,22 @@ class RootflowDataset(FunctionalDataset):
         # Does not play well with views (What should we change and not change. Do we allow different parts of the dataset to have different data?)
         # Does not play well with datasets who need to have data be memmaped from disk
         if targets:
-            map_target = self.targets
+            attribute = "target"
         else:
-            map_target = self.data
+            attribute = "data"
 
         if batch_size is None:
-            mapping_generator = enumerate(map_target)
+            for idx, example in enumerate(self.data):
+                data_item = self.data[idx]
+                setattr(data_item, attribute, function(getattr(data_item, attribute)))
         else:
-            mapping_generator = batch_enumerate(map_target, batch_size)
-
-        for slice_or_index, batch_or_example in mapping_generator:
-            mapped_data = function(batch_or_example)
-            map_target[slice_or_index] = mapped_data
+            for slice, batch in batch_enumerate(self.data, batch_size):
+                mapped_batch_data = function(
+                    [getattr(data_item, attribute) for data_item in batch]
+                )
+                for idx, mapped_example_data in zip(slice, mapped_batch_data):
+                    data_item = self.data[idx]
+                    setattr(data_item, attribute, mapped_example_data)
 
         return self
 
@@ -187,6 +191,7 @@ class ConcatRootflowDatasetView(FunctionalDataset):
         datatset_one: Union[RootflowDataset, "RootflowDatasetView"],
         dataset_two: Union[RootflowDataset, "RootflowDatasetView"],
     ):
+        super().__init__()
         self.dataset_one = datatset_one
         self.dataset_two = dataset_two
         self.transition_point = len(datatset_one)
