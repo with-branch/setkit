@@ -17,10 +17,10 @@ def test_create_data_item_single_target():
 
 def test_create_data_item_multi_target():
     data_item = RootflowDataItem(1293, target=["target_one", "target_two", 2, 3])
-    assert data_item.target["task-1"] == "target_one"
-    assert data_item.target["task-2"] == "target_two"
-    assert data_item.target["task-3"] == 2
-    assert data_item.target["task-4"] == 3
+    assert data_item.target["task-0"] == "target_one"
+    assert data_item.target["task-1"] == "target_two"
+    assert data_item.target["task-2"] == 2
+    assert data_item.target["task-3"] == 3
 
 
 def test_create_data_item_multi_task():
@@ -29,3 +29,11 @@ def test_create_data_item_multi_task():
     )
     assert data_item.target["task_one"] == "task_one_val"
     assert data_item.target["task_two"] == 1035
+
+
+def test_unpack_data_item():
+    data_item = RootflowDataItem(20, target=5)
+    id, data, target = data_item
+    assert id == None
+    assert data == 20
+    assert target == {"task": 5}

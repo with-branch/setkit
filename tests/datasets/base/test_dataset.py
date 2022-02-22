@@ -10,11 +10,11 @@ from rootflow.datasets.base import (
 class TestDataset(RootflowDataset):
     def prepare_data(self, path: str):
         data = [i for i in range(100)]
-        labels = [(i % 3) == 1 for i in range(100)]
+        targets = [(i % 3) == 1 for i in range(100)]
         ids = [f"data_item-{i}" for i in range(len(data))]
         return [
-            RootflowDataItem(data, id=id, label=label)
-            for id, data, label in zip(ids, data, labels)
+            RootflowDataItem(data, id=id, target=target)
+            for id, data, target in zip(ids, data, targets)
         ]
 
     def setup(self):
@@ -25,7 +25,7 @@ def test_create_dataset():
     dataset = TestDataset()
     assert dataset[0]["id"] == "data_item-0"
     assert dataset[0]["data"] == 0
-    assert dataset[0]["label"] == False
+    assert dataset[0]["target"] == False
     assert len(dataset) == 100
 
 
@@ -33,7 +33,7 @@ def test_create_dataset_no_ids():
     dataset = TestDataset()
     assert dataset[0]["id"] == "0"
     assert dataset[0]["data"] == 0
-    assert dataset[0]["label"] == False
+    assert dataset[0]["target"] == False
     assert len(dataset) == 100
 
 
@@ -43,20 +43,20 @@ def test_slice_dataset():
     dataset_view = dataset[50:]
     assert dataset_view[0]["id"] == "data_item-50"
     assert dataset_view[0]["data"] == 50
-    assert dataset_view[0]["label"] == False
+    assert dataset_view[0]["target"] == False
 
     dataset_view = dataset[17:38]
     assert dataset_view[0]["id"] == "data_item-17"
     assert dataset_view[0]["data"] == 17
-    assert dataset_view[0]["label"] == False
+    assert dataset_view[0]["target"] == False
     assert dataset_view[-1]["id"] == "data_item-37"
     assert dataset_view[-1]["data"] == 37
-    assert dataset_view[-1]["label"] == True
+    assert dataset_view[-1]["target"] == True
 
     dataset_view = dataset[20:30:4]
     assert dataset_view[1]["id"] == "data_item-24"
     assert dataset_view[1]["data"] == 24
-    assert dataset_view[1]["label"] == False
+    assert dataset_view[1]["target"] == False
 
 
 def test_slice_datset_with_list():
@@ -66,13 +66,13 @@ def test_slice_datset_with_list():
     dataset_view = dataset[indices]
     assert dataset_view[2]["id"] == "data_item-6"
     assert dataset_view[2]["data"] == 6
-    assert dataset_view[2]["label"] == False
+    assert dataset_view[2]["target"] == False
 
     indices = [7, 3, 6, 55, 12, 26, 31, 2]
     dataset_view = dataset[indices]
     assert dataset_view[6]["id"] == "data_item-31"
     assert dataset_view[6]["data"] == 31
-    assert dataset_view[6]["label"] == True
+    assert dataset_view[6]["target"] == True
 
 
 def test_map_dataset():
@@ -96,10 +96,10 @@ def test_split_dataset():
     split_one, split_two = dataset.split(seed=42)
     assert split_one[3]["id"] == "data_item-56"
     assert split_one[3]["data"] == 56
-    assert split_one[3]["label"] == False
+    assert split_one[3]["target"] == False
     assert split_two[8]["id"] == "data_item-15"
     assert split_two[8]["data"] == 15
-    assert split_two[8]["label"] == False
+    assert split_two[8]["target"] == False
 
 
 def test_concat_dataset_and_dataset():
@@ -107,7 +107,7 @@ def test_concat_dataset_and_dataset():
     concat_result = dataset + dataset
     assert concat_result[len(dataset)]["id"] == "data_item-0"
     assert concat_result[len(dataset)]["data"] == 0
-    assert concat_result[len(dataset)]["label"] == False
+    assert concat_result[len(dataset)]["target"] == False
     assert len(concat_result) == 2 * len(dataset)
 
 
@@ -117,7 +117,7 @@ def test_concat_dataset_and_dataset_view():
     concat_result = dataset + dataset_view
     assert concat_result[len(dataset)]["id"] == "data_item-5"
     assert concat_result[len(dataset)]["data"] == 5
-    assert concat_result[len(dataset)]["label"] == False
+    assert concat_result[len(dataset)]["target"] == False
     assert len(concat_result) == len(dataset) + len(dataset_view)
 
 
@@ -127,5 +127,5 @@ def test_concat_dataset_and_concat_dataset_view():
     concat_result = dataset + concat_dataset_view
     assert concat_result[len(dataset)]["id"] == "data_item-5"
     assert concat_result[len(dataset)]["data"] == 5
-    assert concat_result[len(dataset)]["label"] == False
+    assert concat_result[len(dataset)]["target"] == False
     assert len(concat_result) == len(dataset) + len(concat_dataset_view)

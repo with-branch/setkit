@@ -223,8 +223,15 @@ class RootflowDataItem:
     def __init__(self, data, id=None, target=None) -> None:
         self.data = data
         self.id = id
-        if not isinstance(target, dict):
-            self.target = {"task": target}
+        if isinstance(target, (tuple, list)):
+            target = {
+                f"task-{task_idx}": task_target
+                for task_idx, task_target in enumerate(target)
+            }
+        if not isinstance(target, dict) and not target is None:
+            target = {"task": target}
+
+        self.target = target
 
     def __iter__(self):
-        return (self.id, self.data, self.target)
+        return iter((self.id, self.data, self.target))
