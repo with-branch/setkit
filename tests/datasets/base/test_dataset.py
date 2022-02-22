@@ -1,19 +1,27 @@
 from typing import Tuple
 import pytest
-from rootflow.datasets.base import RootflowDataset
+from rootflow.datasets.base import (
+    RootflowDataset,
+    RootflowDataItem,
+    ConcatRootflowDatasetView,
+)
+
+
+class TestDataset(RootflowDataset):
+    def prepare_data(self, path: str):
+        data = [i for i in range(100)]
+        labels = [(i % 3) == 1 for i in range(100)]
+        ids = [f"data_item-{i}" for i in range(len(data))]
+        return [
+            RootflowDataItem(data, id=id, label=label)
+            for id, data, label in zip(ids, data, labels)
+        ]
+
+    def setup(self):
+        pass
 
 
 def test_create_dataset():
-    class TestDataset(RootflowDataset):
-        def prepare_data(self, path: str):
-            data = [i for i in range(100)]
-            labels = [(i % 3) == 1 for i in range(100)]
-            ids = [f"data_item-{i}" for i in range(len(data))]
-            return (ids, data, labels)
-
-        def setup(self):
-            pass
-
     dataset = TestDataset()
     assert dataset[0]["id"] == "data_item-0"
     assert dataset[0]["data"] == 0
@@ -22,15 +30,6 @@ def test_create_dataset():
 
 
 def test_create_dataset_no_ids():
-    class TestDataset(RootflowDataset):
-        def prepare_data(self, path: str):
-            data = [i for i in range(100)]
-            labels = [(i % 3) == 1 for i in range(100)]
-            return (None, data, labels)
-
-        def setup(self):
-            pass
-
     dataset = TestDataset()
     assert dataset[0]["id"] == "0"
     assert dataset[0]["data"] == 0
@@ -39,16 +38,6 @@ def test_create_dataset_no_ids():
 
 
 def test_slice_dataset():
-    class TestDataset(RootflowDataset):
-        def prepare_data(self, path: str):
-            data = [i for i in range(100)]
-            labels = [(i % 3) == 1 for i in range(100)]
-            ids = [f"data_item-{i}" for i in range(len(data))]
-            return (ids, data, labels)
-
-        def setup(self):
-            pass
-
     dataset = TestDataset()
 
     dataset_view = dataset[50:]
@@ -71,16 +60,6 @@ def test_slice_dataset():
 
 
 def test_slice_datset_with_list():
-    class TestDataset(RootflowDataset):
-        def prepare_data(self, path: str):
-            data = [i for i in range(100)]
-            labels = [(i % 3) == 1 for i in range(100)]
-            ids = [f"data_item-{i}" for i in range(len(data))]
-            return (ids, data, labels)
-
-        def setup(self):
-            pass
-
     dataset = TestDataset()
 
     indices = [2, 3, 6, 12, 26, 32]
@@ -97,16 +76,6 @@ def test_slice_datset_with_list():
 
 
 def test_map_dataset():
-    class TestDataset(RootflowDataset):
-        def prepare_data(self, path: str):
-            data = [i for i in range(100)]
-            labels = [(i % 3) == 1 for i in range(100)]
-            ids = [f"data_item-{i}" for i in range(len(data))]
-            return (ids, data, labels)
-
-        def setup(self):
-            pass
-
     dataset = TestDataset()
     map_function = lambda x: ((x**2) + 1) / 10
     mapped_dataset = dataset.map(map_function)
@@ -115,16 +84,6 @@ def test_map_dataset():
 
 
 def test_transform_dataset():
-    class TestDataset(RootflowDataset):
-        def prepare_data(self, path: str):
-            data = [i for i in range(100)]
-            labels = [(i % 3) == 1 for i in range(100)]
-            ids = [f"data_item-{i}" for i in range(len(data))]
-            return (ids, data, labels)
-
-        def setup(self):
-            pass
-
     dataset = TestDataset()
     transform_function = lambda x: ((x**2) + 1) / 10
     transformed_dataset = dataset.transform(transform_function)
@@ -133,16 +92,6 @@ def test_transform_dataset():
 
 
 def test_split_dataset():
-    class TestDataset(RootflowDataset):
-        def prepare_data(self, path: str):
-            data = [i for i in range(100)]
-            labels = [(i % 3) == 1 for i in range(100)]
-            ids = [f"data_item-{i}" for i in range(len(data))]
-            return (ids, data, labels)
-
-        def setup(self):
-            pass
-
     dataset = TestDataset()
     split_one, split_two = dataset.split(seed=42)
     assert split_one[3]["id"] == "data_item-56"
@@ -151,3 +100,32 @@ def test_split_dataset():
     assert split_two[8]["id"] == "data_item-15"
     assert split_two[8]["data"] == 15
     assert split_two[8]["label"] == False
+
+
+def test_concat_dataset_and_dataset():
+    dataset = TestDataset()
+    concat_result = dataset + dataset
+    assert concat_result[len(dataset)]["id"] == "data_item-0"
+    assert concat_result[len(dataset)]["data"] == 0
+    assert concat_result[len(dataset)]["label"] == False
+    assert len(concat_result) == 2 * len(dataset)
+
+
+def test_concat_dataset_and_dataset_view():
+    dataset = TestDataset()
+    dataset_view = dataset[5:30]
+    concat_result = dataset + dataset_view
+    assert concat_result[len(dataset)]["id"] == "data_item-5"
+    assert concat_result[len(dataset)]["data"] == 5
+    assert concat_result[len(dataset)]["label"] == False
+    assert len(concat_result) == len(dataset) + len(dataset_view)
+
+
+def test_concat_dataset_and_concat_dataset_view():
+    dataset = TestDataset()
+    concat_dataset_view = ConcatRootflowDatasetView(dataset, dataset)
+    concat_result = dataset + concat_dataset_view
+    assert concat_result[len(dataset)]["id"] == "data_item-5"
+    assert concat_result[len(dataset)]["data"] == 5
+    assert concat_result[len(dataset)]["label"] == False
+    assert len(concat_result) == len(dataset) + len(concat_dataset_view)
