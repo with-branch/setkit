@@ -228,9 +228,6 @@ class RootflowDataItem:
                 f"task-{task_idx}": task_target
                 for task_idx, task_target in enumerate(target)
             }
-        if not isinstance(target, dict) and not target is None:
-            target = {"task": target}
-
         self.target = target
 
     def __iter__(self):

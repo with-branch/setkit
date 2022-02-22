@@ -12,7 +12,7 @@ def test_create_data_item():
 
 def test_create_data_item_single_target():
     data_item = RootflowDataItem(20, target=5)
-    assert data_item.target["task"] == 5
+    assert data_item.target == 5
 
 
 def test_create_data_item_multi_target():
@@ -36,4 +36,4 @@ def test_unpack_data_item():
     id, data, target = data_item
     assert id == None
     assert data == 20
-    assert target == {"task": 5}
+    assert target == 5
