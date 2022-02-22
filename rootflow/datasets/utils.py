@@ -13,18 +13,18 @@ def id_collate(unprocessed_batch):
     return (ids, processed_data, processed_labels[0])
 
 
-def batch_enumerate(iterable, batch_size=1):
-    length = len(iterable)
-    for ndx in range(0, length, batch_size):
-        upper = min(ndx + batch_size, length)
-        yield (slice(ndx, upper), iterable[ndx:upper])
-
-
 def batch(iterable, batch_size=1):
     length = len(iterable)
     for ndx in range(0, length, batch_size):
         upper = min(ndx + batch_size, length)
         yield iterable[ndx:upper]
+
+
+def batch_enumerate(iterable, batch_size=1):
+    length = len(iterable)
+    for ndx in range(0, length, batch_size):
+        upper = min(ndx + batch_size, length)
+        yield (slice(ndx, upper), iterable[ndx:upper])
 
 
 def map_functions(obj: object, function_list: Iterable[Callable]):

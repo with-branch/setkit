@@ -7,13 +7,14 @@ import rootflow
 from rootflow.datasets.utils import batch_enumerate, map_functions
 
 # TODO:
-# - Sort indices before we use them to construct a DatasetView
-#   so the items retain their order
-# - Filter out the duplicate indices from DatasetView
-# - Decide wether setup should be optional
+# - Decide if setup should be optional
 
 
 class FunctionalDataset(Dataset):
+    def __init__(self) -> None:
+        self.data_transforms = []
+        self.target_transforms = []
+
     def split(
         self, test_proportion: float = 0.1, seed: int = None
     ) -> Tuple["RootflowDatasetView", "RootflowDatasetView"]:
@@ -29,15 +30,27 @@ class FunctionalDataset(Dataset):
     def map(
         self,
         function: Union[Callable, List[Callable]],
-        labels: bool = False,
+        targets: bool = False,
         batch_size: int = None,
-    ):
+    ) -> Union["RootflowDataset", "RootflowDatasetView"]:
         raise NotImplementedError
 
     def transform(
-        self, function: Union[Callable, List[Callable]], labels: bool = False
-    ):
-        raise NotImplementedError
+        self, function: Union[Callable, List[Callable]], targets: bool = False
+    ) -> Union["RootflowDataset", "RootflowDatasetView"]:
+        if not isinstance(function, (tuple, list)):
+            function = [function]
+        if targets:
+            self.target_transforms += function
+        else:
+            self.data_transforms += function
+        return self
+
+    def __add__(self, object):
+        if not isinstance(object, FunctionalDataset):
+            raise AttributeError(f"Cannot add a dataset to {type(object)}")
+
+        return ConcatRootflowDatasetView(self, object)
 
     def stats(self):
         pass
@@ -52,6 +65,7 @@ class FunctionalDataset(Dataset):
 
 class RootflowDataset(FunctionalDataset):
     def __init__(self, root: str = None, download: bool = True) -> None:
+        super().__init__()
         self.DEFAULT_DIRECTORY = os.path.join(
             rootflow.__location__, "datasets/data", type(self).__name__, "data"
         )
@@ -62,7 +76,7 @@ class RootflowDataset(FunctionalDataset):
             root = self.DEFAULT_DIRECTORY
 
         try:
-            ids, data, labels = self.prepare_data(root)
+            self.data = self.prepare_data(root)
         except FileNotFoundError as e:
             logging.warning(f"Data could not be loaded from {root}.")
             if download:
@@ -72,25 +86,15 @@ class RootflowDataset(FunctionalDataset):
                 if not os.path.exists(root):
                     os.makedirs(root)
                 self.download(root)
-                ids, data, labels = self.prepare_data(root)
+                self.data = self.prepare_data(root)
             else:
                 raise e
         logging.info(f"Loaded {type(self).__name__} from {root}.")
 
-        self.data = data
-        if ids is None:
-            self.ids = [str(i) for i, _ in enumerate(self.data)]
-        else:
-            self.ids = ids
-        self.labels = labels
-
-        self.data_transforms = []
-        self.label_transforms = []
-
         self.setup()
         logging.info(f"Setup {type(self).__name__}.")
 
-    def prepare_data(self, path: str) -> Tuple[list, list, list]:
+    def prepare_data(self, path: str) -> List["RootflowDataItem"]:
         raise NotImplementedError
 
     def download(self, path: str):
@@ -99,28 +103,17 @@ class RootflowDataset(FunctionalDataset):
     def setup(self):
         raise NotImplementedError
 
-    def transform(
-        self, function: Union[Callable, List[Callable]], labels: bool = False
-    ):
-        if not isinstance(function, (tuple, list)):
-            function = [function]
-        if labels:
-            self.label_transforms += function
-        else:
-            self.data_transforms += function
-        return self
-
     def map(
         self,
         function: Union[Callable, List[Callable]],
-        labels: bool = False,
+        targets: bool = False,
         batch_size: int = None,
-    ):
+    ) -> Union["RootflowDataset", "RootflowDatasetView"]:
         # Represents some dangerous interior mutability
         # Does not play well with views (What should we change and not change. Do we allow different parts of the dataset to have different data?)
         # Does not play well with datasets who need to have data be memmaped from disk
-        if labels:
-            map_target = self.labels
+        if targets:
+            map_target = self.targets
         else:
             map_target = self.data
 
@@ -145,29 +138,30 @@ class RootflowDataset(FunctionalDataset):
         elif isinstance(index, (tuple, list)):
             return RootflowDatasetView(self, index)
         else:
-            if self.labels is None:
-                label = None
-            else:
-                label = map_functions(self.labels[index], self.label_transforms)
+            id, data, target = self.data[index]
+            if id is None:
+                id = f"{type(self).__name__}-{index}"
             return {
-                "id": self.ids[index],
-                "data": map_functions(self.data[index], self.data_transforms),
-                "label": label,
+                "id": id,
+                "data": map_functions(data, self.data_transforms),
+                "target": map_functions(target, self.target_transforms),
             }
 
 
 class RootflowDatasetView(FunctionalDataset):
-    def __init__(self, dataset: RootflowDataset, view_indices: List[int]) -> None:
+    def __init__(
+        self,
+        dataset: Union[RootflowDataset, "RootflowDatasetView"],
+        view_indices: List[int],
+    ) -> None:
+        super().__init__()
         self.dataset = dataset
-        self.data_indices = view_indices
+        unique_indices = list(set(view_indices))
+        unique_indices.sort()
+        self.data_indices = unique_indices
 
-    def map(self, function: Callable, labels: bool = False, batch_size: int = None):
+    def map(self, function: Callable, targets: bool = False, batch_size: int = None):
         raise AttributeError("Cannot map over a dataset view!")
-
-    def transform(
-        self, function: Union[Callable, List[Callable]], labels: bool = False
-    ):
-        return self.dataset.transform(function=function, labels=labels)
 
     def __len__(self):
         return len(self.data_indices)
@@ -179,4 +173,58 @@ class RootflowDatasetView(FunctionalDataset):
         elif isinstance(index, (tuple, list)):
             return RootflowDatasetView(self, index)
         else:
-            return self.dataset[self.data_indices[index]]
+            data_item = self.dataset[self.data_indices[index]]
+            return {
+                "id": data_item["id"],
+                "data": map_functions(data_item["data"], self.data_transforms),
+                "target": map_functions(data_item["target"], self.target_transforms),
+            }
+
+
+class ConcatRootflowDatasetView(FunctionalDataset):
+    def __init__(
+        self,
+        datatset_one: Union[RootflowDataset, "RootflowDatasetView"],
+        dataset_two: Union[RootflowDataset, "RootflowDatasetView"],
+    ):
+        self.dataset_one = datatset_one
+        self.dataset_two = dataset_two
+        self.transition_point = len(datatset_one)
+
+    def map(self, function: Callable, targets: bool = False, batch_size: int = None):
+        raise AttributeError("Cannot map over concatenated datasets!")
+
+    def __len__(self):
+        return len(self.dataset_one) + len(self.dataset_two)
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            data_indices = list(range(len(self))[index])
+            return RootflowDatasetView(self, data_indices)
+        elif isinstance(index, (tuple, list)):
+            return RootflowDatasetView(self, index)
+        else:
+            if index < self.transition_point:
+                selected_dataset = self.dataset_one
+            else:
+                selected_dataset = self.dataset_two
+                index -= self.transition_point
+            data_item = selected_dataset[index]
+            return {
+                "id": data_item["id"],
+                "data": map_functions(data_item["data"], self.data_transforms),
+                "target": map_functions(data_item["target"], self.target_transforms),
+            }
+
+
+class RootflowDataItem:
+    __slots__ = ("id", "data", "target")
+
+    def __init__(self, data, id=None, target=None) -> None:
+        self.data = data
+        self.id = id
+        if not isinstance(target, dict):
+            self.target = {"task": target}
+
+    def __iter__(self):
+        return (self.id, self.data, self.target)

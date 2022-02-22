@@ -14,3 +14,6 @@ When contributing there are a couple things to keep in mind. First, write tests 
 pip install black
 ```
 in your rootflow development environment. If you are using VSCode, it is also recommended to set your python formatter. This can be done by navigating to `File/Preferences/Settings`, and then searching `Python Formatting Provider`. Set this to `black`. Consider also enabling the `Format On Save` setting.
+
+# TODO
+Update package dependencies
