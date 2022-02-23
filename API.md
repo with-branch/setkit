@@ -21,7 +21,7 @@ These will most likely be separate parameters.
 One consideration is the fact that some LR Schedulers update by batch, and others by epoch (Looking at you `StepLR`). I don't know how much we care about supporting this nuance.
 
 ### Non-rootflow datasets
-Not sure if this should be allowed or not. The only `RootflowDataset` feature we have considered depending on is the `num_classes`, but we can certainly just keep that at the top level API, so that it isn't necessary, the practitioner could provide it.
+We should support this, as part of our priorities for integration. The only `RootflowDataset` feature we have considered depending on is the `num_classes`, but we can certainly just keep that at the top level API, so that it isn't necessary, the practitioner could provide it.
 
 ### Custom DataLoaders
 Position will probably be the same as the `Optimizer and LR Scheduling` section.
