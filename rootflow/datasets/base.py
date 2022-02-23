@@ -7,11 +7,6 @@ from torch.utils.data import Dataset
 import rootflow
 from rootflow.datasets.utils import batch_enumerate, map_functions, get_unique
 
-# TODO:
-# - Decide if setup should be optional
-# - Consider adding some sort of freezing functionality to that would bake all of the
-#   dynamic classes into a precalculated dataset and collect all of the transforms?
-
 
 class FunctionalDataset(Dataset):
     def __init__(self) -> None:
@@ -58,6 +53,9 @@ class FunctionalDataset(Dataset):
             raise AttributeError(f"Cannot add a dataset to {type(object)}")
 
         return ConcatRootflowDatasetView(self, object)
+
+    def num_classes():
+        raise NotImplementedError
 
     def stats(self):
         pass
@@ -108,7 +106,7 @@ class RootflowDataset(FunctionalDataset):
         raise NotImplementedError
 
     def setup(self):
-        raise NotImplementedError
+        pass
 
     def map(
         self,
