@@ -97,6 +97,7 @@ def test_split_dataset_view():
     assert split_two[3]["id"] == "data_item-51"
     assert split_two[3]["data"] == 51
     assert split_two[3]["target"] == False
+    assert len(split_one) + len(split_two) == len(dataset_view)
 
 
 def test_concat_dataset_view_and_dataset():

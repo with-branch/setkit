@@ -112,6 +112,7 @@ def test_split_dataset():
     assert split_two[8]["id"] == "data_item-78"
     assert split_two[8]["data"] == 78
     assert split_two[8]["target"] == False
+    assert len(split_one) + len(split_two) == len(dataset)
 
 
 def test_concat_dataset_and_dataset():
