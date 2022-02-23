@@ -2,7 +2,6 @@ from typing import Callable, Tuple, List, Union
 import logging
 import random
 import os
-from numpy import isin
 from torch.utils.data import Dataset
 import rootflow
 from rootflow.datasets.utils import batch_enumerate, map_functions, get_unique
