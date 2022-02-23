@@ -106,11 +106,11 @@ def test_transform_dataset():
 def test_split_dataset():
     dataset = DatasetForTesting()
     split_one, split_two = dataset.split(seed=42)
-    assert split_one[3]["id"] == "data_item-4"
-    assert split_one[3]["data"] == 4
-    assert split_one[3]["target"] == True
-    assert split_two[8]["id"] == "data_item-78"
-    assert split_two[8]["data"] == 78
+    assert split_one[3]["id"] == "data_item-56"
+    assert split_one[3]["data"] == 56
+    assert split_one[3]["target"] == False
+    assert split_two[8]["id"] == "data_item-15"
+    assert split_two[8]["data"] == 15
     assert split_two[8]["target"] == False
     assert len(split_one) + len(split_two) == len(dataset)
 

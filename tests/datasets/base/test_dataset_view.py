@@ -91,11 +91,11 @@ def test_split_dataset_view():
     dataset = DatasetForTesting()
     dataset_view = dataset[2:88]
     split_one, split_two = dataset_view.split(seed=42)
-    assert split_one[3]["id"] == "data_item-5"
-    assert split_one[3]["data"] == 5
-    assert split_one[3]["target"] == False
-    assert split_two[3]["id"] == "data_item-51"
-    assert split_two[3]["data"] == 51
+    assert split_one[3]["id"] == "data_item-61"
+    assert split_one[3]["data"] == 61
+    assert split_one[3]["target"] == True
+    assert split_two[3]["id"] == "data_item-32"
+    assert split_two[3]["data"] == 32
     assert split_two[3]["target"] == False
     assert len(split_one) + len(split_two) == len(dataset_view)
 

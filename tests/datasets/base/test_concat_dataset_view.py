@@ -82,11 +82,11 @@ def test_split_concat_dataset_view():
     dataset = DatasetForTesting()
     dataset_view = ConcatRootflowDatasetView(dataset, dataset)
     split_one, split_two = dataset_view.split(seed=42)
-    assert split_one[3]["id"] == "data_item-5"
-    assert split_one[3]["data"] == 5
+    assert split_one[3]["id"] == "data_item-26"
+    assert split_one[3]["data"] == 26
     assert split_one[3]["target"] == False
-    assert split_two[3]["id"] == "data_item-30"
-    assert split_two[3]["data"] == 30
+    assert split_two[3]["id"] == "data_item-93"
+    assert split_two[3]["data"] == 93
     assert split_two[3]["target"] == False
     assert len(split_one) + len(split_two) == len(dataset_view)
 

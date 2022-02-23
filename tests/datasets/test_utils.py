@@ -52,8 +52,22 @@ def test_map_functions():
 
 
 def test_get_unique_ordered():
-    raise NotImplementedError
+    my_list = [0, 5, 2, 6, 1, 7, 8, 2]
+    assert get_unique(my_list) == [0, 1, 2, 5, 6, 7, 8]
+    my_list = [8, 5, 7, 2, 1, 8, 5, 1, 2, 6, 8, 9, 5]
+    assert get_unique(my_list) == [1, 2, 5, 6, 7, 8, 9]
+    my_list = [1, 1, 1, 1, 1, 1, 1]
+    assert get_unique(my_list) == [1]
+    my_list = [1, 2, 3, 4, 5]
+    assert get_unique(my_list) == [1, 2, 3, 4, 5]
 
 
 def test_get_unique_unordered():
-    raise NotImplementedError
+    my_list = [0, 5, 2, 6, 1, 7, 8, 2]
+    assert get_unique(my_list, ordered=False) == [0, 5, 2, 6, 1, 7, 8]
+    my_list = [8, 5, 7, 2, 1, 8, 5, 1, 2, 6, 8, 9, 5]
+    assert get_unique(my_list, ordered=False) == [8, 5, 7, 2, 1, 6, 9]
+    my_list = [1, 1, 1, 1, 1, 1, 1]
+    assert get_unique(my_list, ordered=False) == [1]
+    my_list = [1, 2, 3, 4, 5]
+    assert get_unique(my_list, ordered=False) == [1, 2, 3, 4, 5]
