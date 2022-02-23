@@ -28,7 +28,10 @@ def batch_enumerate(iterable, batch_size=1):
 
 
 def map_functions(obj: object, function_list: Iterable[Callable]):
-    return reduce(lambda o, func: func(o), function_list, obj)
+    value = obj
+    for function in function_list:
+        value = function(value)
+    return value
 
 
 def get_unique(input_iterator, ordered=True):
