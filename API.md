@@ -29,6 +29,8 @@ Position will probably be the same as the `Optimizer and LR Scheduling` section.
 ### LR, Batch Size and Epoch defaults
 Other than epochs, these can be found dynamically. Use the well known Learning Rate Range Test from Leslie N Smith for the learning rate, and select batch size such that it is the largest multiple of 2 which does not run out of memory on one of our devices. (Note: `pytorch-lightning` has already implemented something like this.)
 
+If they specify a batch size that doesn't fit, we could automatically do some gradient accumulation. This way, all batch sizes will function on any machine, albeit slowly for some.
+
 As far as the number of epochs. This is a relationship between the dataset, the trainer, and the model. I suggest we should default to infinite epochs (with early stopping)
 
 ### Model Arguments
