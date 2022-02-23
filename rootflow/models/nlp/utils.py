@@ -22,5 +22,3 @@ def tokenize_bookends(tokenization_input: str, output_length: int, tokenizer: Ca
 
 def get_bookends(sequence, length_start, length_end):
     return torch.cat((sequence[:length_start], sequence[-length_end:]), dim=0)
-
-

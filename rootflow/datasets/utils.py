@@ -1,4 +1,3 @@
-from functools import reduce
 from typing import Callable, Iterable
 from torch.utils.data.dataloader import default_collate
 
