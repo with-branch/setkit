@@ -36,7 +36,9 @@ def map_functions(obj: object, function_list: Iterable[Callable]):
 
 def get_unique(input_iterator, ordered=True):
     if ordered:
-        return list(set(input_iterator))
+        unique = list(set(input_iterator))
+        unique.sort()
+        return unique
     else:
         seen = set()
         seen_add = seen.add

@@ -159,7 +159,7 @@ class RootflowDataset(FunctionalDataset):
             }
         elif isinstance(index, slice):
             data_indices = list(range(len(self))[index])
-            return RootflowDatasetView(self, data_indices)
+            return RootflowDatasetView(self, data_indices, sorted=False)
         elif isinstance(index, (tuple, list)):
             return RootflowDatasetView(self, index)
 
@@ -197,7 +197,7 @@ class RootflowDatasetView(FunctionalDataset):
             }
         elif isinstance(index, slice):
             data_indices = list(range(len(self))[index])
-            return RootflowDatasetView(self, data_indices)
+            return RootflowDatasetView(self, data_indices, sorted=False)
         elif isinstance(index, (tuple, list)):
             return RootflowDatasetView(self, index)
 
@@ -239,7 +239,7 @@ class ConcatRootflowDatasetView(FunctionalDataset):
             }
         elif isinstance(index, slice):
             data_indices = list(range(len(self))[index])
-            return RootflowDatasetView(self, data_indices)
+            return RootflowDatasetView(self, data_indices, sorted=False)
         elif isinstance(index, (tuple, list)):
             return RootflowDatasetView(self, index)
 
