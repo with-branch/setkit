@@ -49,3 +49,11 @@ def test_map_functions():
     ]
     assert map_functions("some input", functions) == "som..8."
     assert map_functions("4tun3", functions) == "4tun34tun3."
+
+
+def test_get_unique_ordered():
+    raise NotImplementedError
+
+
+def test_get_unique_unordered():
+    raise NotImplementedError

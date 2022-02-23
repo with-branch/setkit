@@ -4,7 +4,7 @@ import random
 import os
 from torch.utils.data import Dataset
 import rootflow
-from rootflow.datasets.utils import batch_enumerate, map_functions
+from rootflow.datasets.utils import batch_enumerate, map_functions, get_unique
 
 # TODO:
 # - Decide if setup should be optional
@@ -23,8 +23,8 @@ class FunctionalDataset(Dataset):
         random.Random(seed).shuffle(indices)
         n_test = int(dataset_length * test_proportion)
         return (
-            RootflowDatasetView(self, indices[n_test:]),
-            RootflowDatasetView(self, indices[:n_test]),
+            RootflowDatasetView(self, indices[n_test:], sorted=False),
+            RootflowDatasetView(self, indices[:n_test], sorted=False),
         )
 
     def map(
@@ -157,11 +157,11 @@ class RootflowDatasetView(FunctionalDataset):
         self,
         dataset: Union[RootflowDataset, "RootflowDatasetView"],
         view_indices: List[int],
+        sorted=True,
     ) -> None:
         super().__init__()
         self.dataset = dataset
-        unique_indices = list(set(view_indices))
-        unique_indices.sort()
+        unique_indices = get_unique(view_indices, ordered=sorted)
         self.data_indices = unique_indices
 
     def map(self, function: Callable, targets: bool = False, batch_size: int = None):

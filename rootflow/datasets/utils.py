@@ -29,3 +29,12 @@ def batch_enumerate(iterable, batch_size=1):
 
 def map_functions(obj: object, function_list: Iterable[Callable]):
     return reduce(lambda o, func: func(o), function_list, obj)
+
+
+def get_unique(input_iterator, ordered=True):
+    if ordered:
+        return list(set(input_iterator))
+    else:
+        seen = set()
+        seen_add = seen.add
+        return [item for item in input_iterator if not (item in seen or seen_add(item))]
