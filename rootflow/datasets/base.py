@@ -53,7 +53,7 @@ class FunctionalDataset(Dataset):
 
         return ConcatRootflowDatasetView(self, object)
 
-    def num_classes():
+    def task_shapes():
         raise NotImplementedError
 
     def stats(self):
@@ -247,12 +247,7 @@ class RootflowDataItem:
     def __init__(self, data, id=None, target=None) -> None:
         self.data = data
         self.id = id
-        if isinstance(target, (tuple, list)):
-            target = {
-                f"task-{task_idx}": task_target
-                for task_idx, task_target in enumerate(target)
-            }
-        self.target = target
+        self.target = target  # How do we differentiate between regression, single class or multiclass tasks?
 
     def __iter__(self):
         return iter((self.id, self.data, self.target))
