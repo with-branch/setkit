@@ -69,7 +69,10 @@ class FunctionalDataset(Dataset):
 
         return ConcatRootflowDatasetView(self, object)
 
-    def task_shapes():
+    def tasks(self):
+        raise NotImplementedError
+
+    def task_shapes(self):
         raise NotImplementedError
 
     def stats(self):

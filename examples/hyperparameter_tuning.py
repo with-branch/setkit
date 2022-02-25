@@ -1,6 +1,6 @@
 import optuna
 
-from rootflow.datasets.example import ExampleTabular
+from rootflow.datasets.examples import ExampleTabular
 from rootflow.models.linear import AutoLinear
 from rootflow.tasks import SupervisedTrainer
 
