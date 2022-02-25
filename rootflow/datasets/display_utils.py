@@ -69,15 +69,19 @@ def format_statistics(
 
 def flatten_example(example: dict) -> list:
     id, data, target = example["id"], example["data"], example["target"]
-
     flat_example = [id]
-    for element in [data, target]:
-        if isinstance(element, Sequence) and not isinstance(element, str):
-            flat_example += element
-        elif isinstance(element, Mapping):
-            flat_example += element.values()
-        else:
-            flat_example.append(element)
+
+    if isinstance(data, Sequence) and not isinstance(data, str):
+        flat_example += data
+    elif isinstance(data, Mapping):
+        flat_example += data.values()
+    else:
+        flat_example.append(data)
+
+    if isinstance(target, Mapping):
+        flat_example += target.values()
+    else:
+        flat_example.append(target)
 
     return flat_example
 
@@ -85,22 +89,20 @@ def flatten_example(example: dict) -> list:
 def get_flat_column_names(example: dict) -> List[str]:
     _, data, target = example["id"], example["data"], example["target"]
 
-    column_names = ["ID"]
+    column_names = ["id"]
     if isinstance(data, Sequence) and not isinstance(data, str):
-        column_names += [f"Feature {i}" for i in range(len(data))]
+        column_names += [f"feature_{i}" for i in range(len(data))]
     elif isinstance(data, Mapping):
         column_names += data.keys()
     elif isinstance(data, str):
-        column_names.append("Text")
+        column_names.append("text")
     else:
-        column_names.append("Data")
+        column_names.append("data")
 
-    if isinstance(target, Sequence) and not isinstance(data, str):
-        column_names += [f"Target {i}" for i in range(len(target))]
-    elif isinstance(target, Mapping):
+    if isinstance(target, Mapping):
         column_names += target.keys()
     else:
-        column_names.append("Target")
+        column_names.append("target")
 
     return column_names
 

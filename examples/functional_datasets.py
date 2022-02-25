@@ -1,4 +1,4 @@
-from rootflow.datasets.examples import ExampleNLP, ExampleTabular
+from rootflow.datasets.examples import ExampleMultitask, ExampleNLP, ExampleTabular
 
 # Creating a new instance of a rootflow dataset will
 # automatically download that dataset if you don't have
@@ -10,6 +10,20 @@ dataset = ExampleNLP(download=False)
 
 # Or if you already have the data in a different location
 # just load it from there
-dataset = ExampleNLP(root="rootflow/datasets/data/ExampleNLP/data", download=False)
+dataset = ExampleNLP(root="rootflow/datasets/data/ExampleNLP/data", download=True)
 
 dataset.describe()
+print(dataset.tasks())
+print(dataset.task_shapes())
+
+dataset = ExampleTabular()
+dataset.describe()
+print(dataset.tasks())
+print(dataset.task_shapes())
+
+dataset = ExampleMultitask()
+dataset.describe()
+print(dataset.tasks())
+print(dataset.task_shapes())
+
+print(dataset.DEFAULT_DIRECTORY)

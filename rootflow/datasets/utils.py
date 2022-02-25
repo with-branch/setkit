@@ -1,5 +1,7 @@
 from typing import Any, Callable, Iterable, Mapping, Sequence, Union
 from torch.utils.data.dataloader import default_collate
+import torch
+import numpy as np
 
 
 def id_collate(unprocessed_batch):
@@ -51,3 +53,14 @@ def get_nested_data_types(object: Any) -> Union[dict, list, type]:
         return {key: get_nested_data_types(value) for key, value in object.items()}
     else:
         return type(object)
+
+
+def get_target_shape(target):
+    if isinstance(target, (torch.Tensor, np.ndarray)):
+        return target.shape
+    elif isinstance(target, Sequence) and not isinstance(target, str):
+        len(target)
+    elif isinstance(target, float):
+        return 1
+    else:
+        return None

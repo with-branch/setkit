@@ -22,7 +22,7 @@ class ExampleTabular(RootflowDataset):
                 RootflowDataItem(
                     [float(feature) for feature in item[1:5]],
                     id=item[0],
-                    target=int(item[5]),
+                    target=float(item[5]),
                 )
             )
         return data
@@ -39,7 +39,7 @@ class ExampleTabular(RootflowDataset):
             ]
             for i in range(self.EXAMPLE_DATASET_LENGTH)
         ]
-        labels = [i for i in range(self.EXAMPLE_DATASET_LENGTH)]
+        labels = [float(i) for i in range(self.EXAMPLE_DATASET_LENGTH)]
 
         data_path = os.path.join(path, self.EXAMPLE_DATASET_FILE_NAME)
         with open(data_path, "w") as csv_file:
@@ -95,3 +95,46 @@ class ExampleNLP(RootflowDataset):
             writer.writerow(["id", "data", "oddness"])
             for data_row in zip(ids, data, labels):
                 writer.writerow(data_row)
+
+
+class ExampleMultitask(RootflowDataset):
+    """
+    An example rootflow dataset for multitask data datasets.
+    Each data item is "Hello there, my index is (index)", depending on the index
+    The targets are binary variables indicating if the index is odd or even, and
+    a second indicating whether the index is divisible by 3.
+    """
+
+    EXAMPLE_DATASET_LENGTH = 1000
+    EXAMPLE_DATASET_FILE_NAME = "example.csv"
+
+    def prepare_data(self, path: str):
+        with open(os.path.join(path, self.EXAMPLE_DATASET_FILE_NAME)) as data_file:
+            csv_data = list(csv.reader(data_file))
+        data = []
+        for item in csv_data[1:]:
+            data.append(
+                RootflowDataItem(
+                    item[1],
+                    id=item[0],
+                    target={"is_even": int(item[2]), "is_threesy": int(item[3])},
+                )
+            )
+        return data
+
+    def download(self, path: str):
+        ids = [f"example_dataset-{i}" for i in range(self.EXAMPLE_DATASET_LENGTH)]
+        data = [
+            f"Hello there, my index is {i}" for i in range(self.EXAMPLE_DATASET_LENGTH)
+        ]
+        labels = [
+            [f"{i % 2}", f"{int((i % 3) == 0)}"]
+            for i in range(self.EXAMPLE_DATASET_LENGTH)
+        ]
+
+        data_path = os.path.join(path, self.EXAMPLE_DATASET_FILE_NAME)
+        with open(data_path, "w") as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(["id", "data", "evenness", "threeness"])
+            for id, data, label in zip(ids, data, labels):
+                writer.writerow([id, data, *label])
