@@ -150,3 +150,23 @@ def test_filter_dataset():
 
 def test_iter_dataset():
     raise NotImplementedError
+
+
+def test_get_tasks_dataset():
+    raise NotImplementedError
+
+
+def test_get_task_shapes_dataset():
+    raise NotImplementedError
+
+
+def test_stats_dataset():
+    raise NotImplementedError
+
+
+def test_examples_dataset():
+    raise NotImplementedError
+
+
+def test_describe_dataset():
+    raise NotImplementedError
