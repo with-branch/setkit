@@ -27,6 +27,11 @@ class FunctionalDataset(Dataset):
         elif isinstance(index, (tuple, list)):
             return RootflowDatasetView(self, index)
 
+    def __iter__(self):
+        for index in range(len(self)):
+            id, data, target = self._index(index)
+            yield {"id": id, "data": data, "target": target}
+
     def _index(self, index) -> tuple:
         raise NotImplementedError
 
