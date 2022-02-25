@@ -142,3 +142,7 @@ def test_concat_dataset_and_concat_dataset_view():
     assert concat_result[len(dataset)]["data"] == 0
     assert concat_result[len(dataset)]["target"] == False
     assert len(concat_result) == len(dataset) + len(concat_dataset_view)
+
+
+def test_filter_dataset():
+    raise NotImplementedError

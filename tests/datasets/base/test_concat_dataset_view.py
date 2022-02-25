@@ -123,3 +123,7 @@ def test_concat_concat_dataset_view_and_concat_dataset_view():
     assert len(concat_result) == len(concat_dataset_view_one) + len(
         concat_dataset_view_two
     )
+
+
+def test_filter_concat_dataset_view():
+    raise NotImplementedError

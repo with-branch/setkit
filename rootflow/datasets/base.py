@@ -55,6 +55,22 @@ class FunctionalDataset(Dataset):
     ) -> Union["RootflowDataset", "RootflowDatasetView"]:
         raise NotImplementedError
 
+    def where(
+        self,
+        filter_function: Callable,
+        targets: bool = False,
+    ) -> "RootflowDatasetView":
+        if targets:
+            conditional_attr = "target"
+        else:
+            conditional_attr = "data"
+
+        filtered_indices = []
+        for index, item in enumerate(self):
+            if filter_function(item[conditional_attr]):
+                filtered_indices.append(index)
+        return RootflowDatasetView(self, filtered_indices)
+
     def transform(
         self, function: Union[Callable, List[Callable]], targets: bool = False
     ) -> Union["RootflowDataset", "RootflowDatasetView"]:
