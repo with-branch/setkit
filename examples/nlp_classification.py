@@ -4,7 +4,9 @@ from rootflow.tasks.nlp import FineTuneTrainer
 from rootflow.tasks import SupervisedTrainer
 from rootflow.training.metrics import F1, Accuracy
 
-dataset = ExampleNLP()
+dataset = (
+    ExampleNLP()
+)  # Automatically downloads the data if necessary (places in the rootflow package)
 
 model = ClassificationTransformer("roberta-base", task_shapes=dataset.task_shapes())
 tokenizer = Tokenizer("roberta-base", model.config.max_token_length, mode="split")
