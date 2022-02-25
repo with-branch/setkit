@@ -14,6 +14,22 @@ class FunctionalDataset(Dataset):
         self.has_data_transforms = False
         self.has_target_transforms = False
 
+    def __len__(self):
+        raise NotImplementedError
+
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            id, data, target = self._index(index)
+            return {"id": id, "data": data, "target": target}
+        elif isinstance(index, slice):
+            data_indices = list(range(len(self))[index])
+            return RootflowDatasetView(self, data_indices, sorted=False)
+        elif isinstance(index, (tuple, list)):
+            return RootflowDatasetView(self, index)
+
+    def _index(self, index) -> tuple:
+        raise NotImplementedError
+
     def split(
         self, test_proportion: float = 0.1, seed: int = None
     ) -> Tuple["RootflowDatasetView", "RootflowDatasetView"]:
@@ -139,26 +155,16 @@ class RootflowDataset(FunctionalDataset):
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            data_item = self.data[index]
-            id, data, target = data_item.id, data_item.data, data_item.target
-            if id is None:
-                id = f"{type(self).__name__}-{index}"
-            if self.has_data_transforms:
-                data = map_functions(data, self.data_transforms)
-            if self.has_target_transforms:
-                target = map_functions(target, self.target_transforms)
-            return {
-                "id": id,
-                "data": data,
-                "target": target,
-            }
-        elif isinstance(index, slice):
-            data_indices = list(range(len(self))[index])
-            return RootflowDatasetView(self, data_indices, sorted=False)
-        elif isinstance(index, (tuple, list)):
-            return RootflowDatasetView(self, index)
+    def _index(self, index):
+        data_item = self.data[index]
+        id, data, target = data_item.id, data_item.data, data_item.target
+        if id is None:
+            id = f"{type(self).__name__}-{index}"
+        if self.has_data_transforms:
+            data = map_functions(data, self.data_transforms)
+        if self.has_target_transforms:
+            target = map_functions(target, self.target_transforms)
+        return (id, data, target)
 
 
 class RootflowDatasetView(FunctionalDataset):
@@ -179,24 +185,13 @@ class RootflowDatasetView(FunctionalDataset):
     def __len__(self):
         return len(self.data_indices)
 
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            data_item = self.dataset[self.data_indices[index]]
-            id, data, target = data_item["id"], data_item["data"], data_item["target"]
-            if self.has_data_transforms:
-                data = map_functions(data, self.data_transforms)
-            if self.has_target_transforms:
-                target = map_functions(target, self.target_transforms)
-            return {
-                "id": id,
-                "data": data,
-                "target": target,
-            }
-        elif isinstance(index, slice):
-            data_indices = list(range(len(self))[index])
-            return RootflowDatasetView(self, data_indices, sorted=False)
-        elif isinstance(index, (tuple, list)):
-            return RootflowDatasetView(self, index)
+    def _index(self, index):
+        id, data, target = self.dataset._index(self.data_indices[index])
+        if self.has_data_transforms:
+            data = map_functions(data, self.data_transforms)
+        if self.has_target_transforms:
+            target = map_functions(target, self.target_transforms)
+        return (id, data, target)
 
 
 class ConcatRootflowDatasetView(FunctionalDataset):
@@ -216,29 +211,18 @@ class ConcatRootflowDatasetView(FunctionalDataset):
     def __len__(self):
         return len(self.dataset_one) + len(self.dataset_two)
 
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            if index < self.transition_point:
-                selected_dataset = self.dataset_one
-            else:
-                selected_dataset = self.dataset_two
-                index -= self.transition_point
-            data_item = selected_dataset[index]
-            id, data, target = data_item["id"], data_item["data"], data_item["target"]
-            if self.has_data_transforms:
-                data = map_functions(data, self.data_transforms)
-            if self.has_target_transforms:
-                target = map_functions(target, self.target_transforms)
-            return {
-                "id": id,
-                "data": data,
-                "target": target,
-            }
-        elif isinstance(index, slice):
-            data_indices = list(range(len(self))[index])
-            return RootflowDatasetView(self, data_indices, sorted=False)
-        elif isinstance(index, (tuple, list)):
-            return RootflowDatasetView(self, index)
+    def _index(self, index):
+        if index < self.transition_point:
+            selected_dataset = self.dataset_one
+        else:
+            selected_dataset = self.dataset_two
+            index -= self.transition_point
+        id, data, target = selected_dataset._index(index)
+        if self.has_data_transforms:
+            data = map_functions(data, self.data_transforms)
+        if self.has_target_transforms:
+            target = map_functions(target, self.target_transforms)
+        return (id, data, target)
 
 
 class RootflowDataItem:
