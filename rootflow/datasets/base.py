@@ -1,10 +1,21 @@
-from typing import Callable, Tuple, List, Union
+from typing import Callable, Sequence, Tuple, List, Union
 import logging
 import random
 import os
+from numpy import isin
 from torch.utils.data import Dataset
 import rootflow
-from rootflow.datasets.utils import batch_enumerate, map_functions, get_unique
+from rootflow.datasets.display_utils import (
+    format_docstring,
+    format_examples_tabular,
+    format_statistics,
+)
+from rootflow.datasets.utils import (
+    batch_enumerate,
+    get_nested_data_types,
+    map_functions,
+    get_unique,
+)
 
 
 class FunctionalDataset(Dataset):
@@ -97,14 +108,36 @@ class FunctionalDataset(Dataset):
         raise NotImplementedError
 
     def stats(self):
-        pass
+        data_example = self[0]["data"]
+        target_example = self[0]["target"]
+        return {
+            "length": len(self),
+            "data_types": get_nested_data_types(data_example),
+            "target_types": get_nested_data_types(target_example),
+        }
 
     def examples(self, num_examples: int = 5):
         return [self[i] for i in range(num_examples)]
 
-    def describe(self):
-        print(self.stats())
-        print(self.examples())
+    def describe(self, output_width: int = None):
+        terminal_size = os.get_terminal_size()
+        if output_width is None:
+            description_width = min(150, terminal_size.columns)
+        else:
+            description_width = output_width
+
+        print(f"{type(self).__name__}:")
+        dataset_doc = type(self).__doc__
+        if not dataset_doc is None:
+            print(format_docstring(dataset_doc, description_width))
+        else:
+            print("(No Description)")
+
+        print("\nStats:")
+        print(format_statistics(self.stats(), description_width, indent=True))
+
+        print("\nExamples:")
+        print(format_examples_tabular(self.examples(), description_width, indent=True))
 
 
 class RootflowDataset(FunctionalDataset):

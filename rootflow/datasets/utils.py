@@ -1,4 +1,4 @@
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable, Mapping, Sequence, Union
 from torch.utils.data.dataloader import default_collate
 
 
@@ -42,3 +42,12 @@ def get_unique(input_iterator, ordered=True):
         seen = set()
         seen_add = seen.add
         return [item for item in input_iterator if not (item in seen or seen_add(item))]
+
+
+def get_nested_data_types(object: Any) -> Union[dict, list, type]:
+    if isinstance(object, Sequence) and not isinstance(object, str):
+        return [get_nested_data_types(element) for element in object]
+    elif isinstance(object, Mapping):
+        return {key: get_nested_data_types(value) for key, value in object.items()}
+    else:
+        return type(object)

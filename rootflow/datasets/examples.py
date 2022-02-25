@@ -4,6 +4,12 @@ from rootflow.datasets.base import RootflowDataset, RootflowDataItem
 
 
 class ExampleTabular(RootflowDataset):
+    """
+    An example rootflow dataset for tabular data.
+    The data is generated with 4 features calculated off of the targets.
+    The targets are the integers range(1000)
+    """
+
     EXAMPLE_DATASET_LENGTH = 1000
     EXAMPLE_DATASET_FILE_NAME = "example.csv"
 
@@ -14,7 +20,7 @@ class ExampleTabular(RootflowDataset):
         for item in csv_data[1:]:
             data.append(
                 RootflowDataItem(
-                    [int(feature) for feature in item[1:5]],
+                    [float(feature) for feature in item[1:5]],
                     id=item[0],
                     target=int(item[5]),
                 )
@@ -26,9 +32,10 @@ class ExampleTabular(RootflowDataset):
         data = [
             [  # Just some random functions of i
                 int(i**2 / 12) * int(i) + int(i / 10),
-                (int(i**2) / (20 * i)) + ((7 * (i % (i % 15))) / int((i**2) / 50)),
+                (int(i**2) / ((20 * i) + 1e-15))
+                + ((7 * ((i + 1) % ((i % 15) + 1))) / (int((i**2) / 50) + 1e-15)),
                 (i % 3) * i / 123,
-                i % int((i**2) / 121),
+                i % (int((i**2) / 121) + 1),
             ]
             for i in range(self.EXAMPLE_DATASET_LENGTH)
         ]
@@ -52,6 +59,12 @@ class ExampleTabular(RootflowDataset):
 
 
 class ExampleNLP(RootflowDataset):
+    """
+    An example rootflow dataset for NLP data.
+    Each data item is "Hello there, my index is (odd/even)", depending on the index
+    The targets are binary variables indicating if the index is odd or even.
+    """
+
     EXAMPLE_DATASET_LENGTH = 1000
     EXAMPLE_DATASET_FILE_NAME = "example.csv"
 
