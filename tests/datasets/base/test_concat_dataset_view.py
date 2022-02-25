@@ -127,3 +127,7 @@ def test_concat_concat_dataset_view_and_concat_dataset_view():
 
 def test_filter_concat_dataset_view():
     raise NotImplementedError
+
+
+def test_iter_concat_dataset_view():
+    raise NotImplementedError
