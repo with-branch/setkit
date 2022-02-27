@@ -1,6 +1,6 @@
 from typing import Tuple
 import pytest
-from rootflow.datasets.base import (
+from rootflow.datasets.base.dataset import (
     RootflowDataset,
     RootflowDataItem,
     ConcatRootflowDatasetView,

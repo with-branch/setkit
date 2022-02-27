@@ -1,4 +1,4 @@
-from rootflow.datasets.display_utils import *
+from rootflow.datasets.base.display_utils import *
 
 
 def test_condense_with_elipse():

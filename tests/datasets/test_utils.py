@@ -1,4 +1,4 @@
-from rootflow.datasets.utils import *
+from rootflow.datasets.base.utils import *
 
 
 def test_batch():

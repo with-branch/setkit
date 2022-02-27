@@ -1,149 +1,20 @@
 from typing import Callable, Sequence, Tuple, List, Union
 import logging
-import random
 import os
-from torch.utils.data import Dataset
-import rootflow
-from rootflow.datasets.display_utils import (
-    format_docstring,
-    format_examples_tabular,
-    format_statistics,
-)
-from rootflow.datasets.utils import (
+from rootflow import __location__ as ROOTFLOW_LOCATION
+from rootflow.datasets.base.functional import FunctionalDataset
+from rootflow.datasets.base.utils import (
     batch_enumerate,
-    get_nested_data_types,
     map_functions,
     get_unique,
 )
-
-
-class FunctionalDataset(Dataset):
-    def __init__(self) -> None:
-        self.data_transforms = []
-        self.target_transforms = []
-        self.has_data_transforms = False
-        self.has_target_transforms = False
-
-    def __len__(self):
-        raise NotImplementedError
-
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            id, data, target = self._index(index)
-            return {"id": id, "data": data, "target": target}
-        elif isinstance(index, slice):
-            data_indices = list(range(len(self))[index])
-            return RootflowDatasetView(self, data_indices, sorted=False)
-        elif isinstance(index, (tuple, list)):
-            return RootflowDatasetView(self, index)
-
-    def __iter__(self):
-        for index in range(len(self)):
-            id, data, target = self._index(index)
-            yield {"id": id, "data": data, "target": target}
-
-    def _index(self, index) -> tuple:
-        raise NotImplementedError
-
-    def split(
-        self, test_proportion: float = 0.1, seed: int = None
-    ) -> Tuple["RootflowDatasetView", "RootflowDatasetView"]:
-        dataset_length = len(self)
-        indices = list(range(dataset_length))
-        random.Random(seed).shuffle(indices)
-        n_test = int(dataset_length * test_proportion)
-        return (
-            RootflowDatasetView(self, indices[n_test:], sorted=False),
-            RootflowDatasetView(self, indices[:n_test], sorted=False),
-        )
-
-    def map(
-        self,
-        function: Union[Callable, List[Callable]],
-        targets: bool = False,
-        batch_size: int = None,
-    ) -> Union["RootflowDataset", "RootflowDatasetView"]:
-        raise NotImplementedError
-
-    def where(
-        self,
-        filter_function: Callable,
-        targets: bool = False,
-    ) -> "RootflowDatasetView":
-        if targets:
-            conditional_attr = "target"
-        else:
-            conditional_attr = "data"
-
-        filtered_indices = []
-        for index, item in enumerate(self):
-            if filter_function(item[conditional_attr]):
-                filtered_indices.append(index)
-        return RootflowDatasetView(self, filtered_indices)
-
-    def transform(
-        self, function: Union[Callable, List[Callable]], targets: bool = False
-    ) -> Union["RootflowDataset", "RootflowDatasetView"]:
-        if not isinstance(function, (tuple, list)):
-            function = [function]
-        if targets:
-            self.target_transforms += function
-            self.has_target_transforms = True
-        else:
-            self.data_transforms += function
-            self.has_data_transforms = True
-        return self
-
-    def __add__(self, object):
-        if not isinstance(object, FunctionalDataset):
-            raise AttributeError(f"Cannot add a dataset to {type(object)}")
-
-        return ConcatRootflowDatasetView(self, object)
-
-    def tasks(self):
-        raise NotImplementedError
-
-    def task_shapes(self):
-        raise NotImplementedError
-
-    def stats(self):
-        data_example = self[0]["data"]
-        target_example = self[0]["target"]
-        return {
-            "length": len(self),
-            "data_types": get_nested_data_types(data_example),
-            "target_types": get_nested_data_types(target_example),
-        }
-
-    def examples(self, num_examples: int = 5):
-        return [self[i] for i in range(num_examples)]
-
-    def describe(self, output_width: int = None):
-        terminal_size = os.get_terminal_size()
-        if output_width is None:
-            description_width = min(150, terminal_size.columns)
-        else:
-            description_width = output_width
-
-        print(f"{type(self).__name__}:")
-        dataset_doc = type(self).__doc__
-        if not dataset_doc is None:
-            print(format_docstring(dataset_doc, description_width))
-        else:
-            print("(No Description)")
-
-        print("\nStats:")
-        print(format_statistics(self.stats(), description_width, indent=True))
-
-        print("\nExamples:")
-        print(format_examples_tabular(self.examples(), description_width, indent=True))
 
 
 class RootflowDataset(FunctionalDataset):
     def __init__(self, root: str = None, download: bool = True) -> None:
         super().__init__()
         self.DEFAULT_DIRECTORY = os.path.join(
-            rootflow.__location__, "datasets/data", type(self).__name__, "data"
+            ROOTFLOW_LOCATION, "datasets/data", type(self).__name__, "data"
         )
         if root is None:
             logging.info(
@@ -211,7 +82,7 @@ class RootflowDataset(FunctionalDataset):
     def __len__(self) -> int:
         return len(self.data)
 
-    def _index(self, index):
+    def index(self, index):
         data_item = self.data[index]
         id, data, target = data_item.id, data_item.data, data_item.target
         if id is None:
@@ -241,8 +112,8 @@ class RootflowDatasetView(FunctionalDataset):
     def __len__(self):
         return len(self.data_indices)
 
-    def _index(self, index):
-        id, data, target = self.dataset._index(self.data_indices[index])
+    def index(self, index):
+        id, data, target = self.dataset.index(self.data_indices[index])
         if self.has_data_transforms:
             data = map_functions(data, self.data_transforms)
         if self.has_target_transforms:
@@ -267,13 +138,13 @@ class ConcatRootflowDatasetView(FunctionalDataset):
     def __len__(self):
         return len(self.dataset_one) + len(self.dataset_two)
 
-    def _index(self, index):
+    def index(self, index):
         if index < self.transition_point:
             selected_dataset = self.dataset_one
         else:
             selected_dataset = self.dataset_two
             index -= self.transition_point
-        id, data, target = selected_dataset._index(index)
+        id, data, target = selected_dataset.index(index)
         if self.has_data_transforms:
             data = map_functions(data, self.data_transforms)
         if self.has_target_transforms:
