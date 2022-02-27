@@ -1,15 +1,20 @@
-from typing import Callable, Tuple, List, Union
+from typing import Callable, Sequence, Tuple, List, Union
 import logging
 import random
 import os
 from torch.utils.data import Dataset
 import rootflow
-from rootflow.datasets.utils import batch_enumerate, map_functions, get_unique
-
-# TODO:
-# - Decide if setup should be optional
-# - Consider adding some sort of freezing functionality to that would bake all of the
-#   dynamic classes into a precalculated dataset and collect all of the transforms?
+from rootflow.datasets.display_utils import (
+    format_docstring,
+    format_examples_tabular,
+    format_statistics,
+)
+from rootflow.datasets.utils import (
+    batch_enumerate,
+    get_nested_data_types,
+    map_functions,
+    get_unique,
+)
 
 
 class FunctionalDataset(Dataset):
@@ -18,6 +23,27 @@ class FunctionalDataset(Dataset):
         self.target_transforms = []
         self.has_data_transforms = False
         self.has_target_transforms = False
+
+    def __len__(self):
+        raise NotImplementedError
+
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            id, data, target = self._index(index)
+            return {"id": id, "data": data, "target": target}
+        elif isinstance(index, slice):
+            data_indices = list(range(len(self))[index])
+            return RootflowDatasetView(self, data_indices, sorted=False)
+        elif isinstance(index, (tuple, list)):
+            return RootflowDatasetView(self, index)
+
+    def __iter__(self):
+        for index in range(len(self)):
+            id, data, target = self._index(index)
+            yield {"id": id, "data": data, "target": target}
+
+    def _index(self, index) -> tuple:
+        raise NotImplementedError
 
     def split(
         self, test_proportion: float = 0.1, seed: int = None
@@ -39,6 +65,22 @@ class FunctionalDataset(Dataset):
     ) -> Union["RootflowDataset", "RootflowDatasetView"]:
         raise NotImplementedError
 
+    def where(
+        self,
+        filter_function: Callable,
+        targets: bool = False,
+    ) -> "RootflowDatasetView":
+        if targets:
+            conditional_attr = "target"
+        else:
+            conditional_attr = "data"
+
+        filtered_indices = []
+        for index, item in enumerate(self):
+            if filter_function(item[conditional_attr]):
+                filtered_indices.append(index)
+        return RootflowDatasetView(self, filtered_indices)
+
     def transform(
         self, function: Union[Callable, List[Callable]], targets: bool = False
     ) -> Union["RootflowDataset", "RootflowDatasetView"]:
@@ -58,15 +100,43 @@ class FunctionalDataset(Dataset):
 
         return ConcatRootflowDatasetView(self, object)
 
+    def tasks(self):
+        raise NotImplementedError
+
+    def task_shapes(self):
+        raise NotImplementedError
+
     def stats(self):
-        pass
+        data_example = self[0]["data"]
+        target_example = self[0]["target"]
+        return {
+            "length": len(self),
+            "data_types": get_nested_data_types(data_example),
+            "target_types": get_nested_data_types(target_example),
+        }
 
     def examples(self, num_examples: int = 5):
         return [self[i] for i in range(num_examples)]
 
-    def describe(self):
-        print(self.stats())
-        print(self.examples())
+    def describe(self, output_width: int = None):
+        terminal_size = os.get_terminal_size()
+        if output_width is None:
+            description_width = min(150, terminal_size.columns)
+        else:
+            description_width = output_width
+
+        print(f"{type(self).__name__}:")
+        dataset_doc = type(self).__doc__
+        if not dataset_doc is None:
+            print(format_docstring(dataset_doc, description_width))
+        else:
+            print("(No Description)")
+
+        print("\nStats:")
+        print(format_statistics(self.stats(), description_width, indent=True))
+
+        print("\nExamples:")
+        print(format_examples_tabular(self.examples(), description_width, indent=True))
 
 
 class RootflowDataset(FunctionalDataset):
@@ -107,7 +177,7 @@ class RootflowDataset(FunctionalDataset):
         raise NotImplementedError
 
     def setup(self):
-        raise NotImplementedError
+        pass
 
     def map(
         self,
@@ -141,26 +211,16 @@ class RootflowDataset(FunctionalDataset):
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            data_item = self.data[index]
-            id, data, target = data_item.id, data_item.data, data_item.target
-            if id is None:
-                id = f"{type(self).__name__}-{index}"
-            if self.has_data_transforms:
-                data = map_functions(data, self.data_transforms)
-            if self.has_target_transforms:
-                target = map_functions(target, self.target_transforms)
-            return {
-                "id": id,
-                "data": data,
-                "target": target,
-            }
-        elif isinstance(index, slice):
-            data_indices = list(range(len(self))[index])
-            return RootflowDatasetView(self, data_indices, sorted=False)
-        elif isinstance(index, (tuple, list)):
-            return RootflowDatasetView(self, index)
+    def _index(self, index):
+        data_item = self.data[index]
+        id, data, target = data_item.id, data_item.data, data_item.target
+        if id is None:
+            id = f"{type(self).__name__}-{index}"
+        if self.has_data_transforms:
+            data = map_functions(data, self.data_transforms)
+        if self.has_target_transforms:
+            target = map_functions(target, self.target_transforms)
+        return (id, data, target)
 
 
 class RootflowDatasetView(FunctionalDataset):
@@ -181,24 +241,13 @@ class RootflowDatasetView(FunctionalDataset):
     def __len__(self):
         return len(self.data_indices)
 
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            data_item = self.dataset[self.data_indices[index]]
-            id, data, target = data_item["id"], data_item["data"], data_item["target"]
-            if self.has_data_transforms:
-                data = map_functions(data, self.data_transforms)
-            if self.has_target_transforms:
-                target = map_functions(target, self.target_transforms)
-            return {
-                "id": id,
-                "data": data,
-                "target": target,
-            }
-        elif isinstance(index, slice):
-            data_indices = list(range(len(self))[index])
-            return RootflowDatasetView(self, data_indices, sorted=False)
-        elif isinstance(index, (tuple, list)):
-            return RootflowDatasetView(self, index)
+    def _index(self, index):
+        id, data, target = self.dataset._index(self.data_indices[index])
+        if self.has_data_transforms:
+            data = map_functions(data, self.data_transforms)
+        if self.has_target_transforms:
+            target = map_functions(target, self.target_transforms)
+        return (id, data, target)
 
 
 class ConcatRootflowDatasetView(FunctionalDataset):
@@ -218,29 +267,18 @@ class ConcatRootflowDatasetView(FunctionalDataset):
     def __len__(self):
         return len(self.dataset_one) + len(self.dataset_two)
 
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            if index < self.transition_point:
-                selected_dataset = self.dataset_one
-            else:
-                selected_dataset = self.dataset_two
-                index -= self.transition_point
-            data_item = selected_dataset[index]
-            id, data, target = data_item["id"], data_item["data"], data_item["target"]
-            if self.has_data_transforms:
-                data = map_functions(data, self.data_transforms)
-            if self.has_target_transforms:
-                target = map_functions(target, self.target_transforms)
-            return {
-                "id": id,
-                "data": data,
-                "target": target,
-            }
-        elif isinstance(index, slice):
-            data_indices = list(range(len(self))[index])
-            return RootflowDatasetView(self, data_indices, sorted=False)
-        elif isinstance(index, (tuple, list)):
-            return RootflowDatasetView(self, index)
+    def _index(self, index):
+        if index < self.transition_point:
+            selected_dataset = self.dataset_one
+        else:
+            selected_dataset = self.dataset_two
+            index -= self.transition_point
+        id, data, target = selected_dataset._index(index)
+        if self.has_data_transforms:
+            data = map_functions(data, self.data_transforms)
+        if self.has_target_transforms:
+            target = map_functions(target, self.target_transforms)
+        return (id, data, target)
 
 
 class RootflowDataItem:
@@ -249,12 +287,7 @@ class RootflowDataItem:
     def __init__(self, data, id=None, target=None) -> None:
         self.data = data
         self.id = id
-        if isinstance(target, (tuple, list)):
-            target = {
-                f"task-{task_idx}": task_target
-                for task_idx, task_target in enumerate(target)
-            }
-        self.target = target
+        self.target = target  # How do we differentiate between regression, single class or multiclass tasks?
 
     def __iter__(self):
         return iter((self.id, self.data, self.target))

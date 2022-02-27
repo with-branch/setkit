@@ -1,59 +1,69 @@
-from typing import List
+from typing import List, Mapping, Union, Dict
 import torch
-from transformers import AutoModelForSequenceClassification
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from transformers.configuration_utils import PretrainedConfig
 from transformers.modeling_outputs import SequenceClassifierOutput
+from rootflow.models.nlp.utils import tokenize_bookends
 
 
-class TransformerConfig:
-    OVERRIDDEN_ATTRIBUTES = ["num_labels"]
-
-    def __init__(self, config: PretrainedConfig):
-        self.config = config
-
-    def ___setattr__(self, key, value):
-        if key in self.OVERRIDDEN_ATTRIBUTES:
-            super().__setattr__(key, value)
-        else:
-            self.config.__setattr__(key, value)
-
-    def __getattr__(self, key):
-        if key in self.OVERRIDDEN_ATTRIBUTES:
-            return getattr(self, key)
-        else:
-            return getattr(self.config, key)
-
-
-class TransformerMultiheaded(torch.nn.Module):
+class Tokenizer:
     def __init__(
-        self, base_model: torch.nn.Module, heads: List[torch.nn.Module], config
-    ):
-        super().__init__()
-        self.base = base_model
-        self.heads = torch.nn.ModuleList(heads)
-        self.config = config
+        self, model_name_or_path: str, max_token_length: int, mode: str = "split"
+    ) -> None:
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        if mode == "split":
+            tokenizer(
+                tokenization_input, padding="max_length", truncation=False
+            )  # Do something with this
+            self._tokenize_function = lambda tokenization_input: tokenize_bookends(
+                tokenization_input, max_token_length, tokenizer=self.tokenizer
+            )
+        elif mode == "first":
+            raise NotImplementedError(f"Mode {mode} is not implemented for Tokenizer!")
+        elif mode == "last":
+            raise NotImplementedError(f"Mode {mode} is not implemented for Tokenizer!")
+        else:
+            raise NotImplementedError(f"Mode {mode} is not implemented for Tokenizer!")
+
+    def __call__(self, input_strings: Union[List[str], str]) -> Dict[str, torch.Tensor]:
+        return self._tokenize_function(input_strings)
+
+
+class ClassificationTransformer(torch.nn.Module):
+    def __init__(self, model_name_or_path: str, task_shapes: Union[dict, int]) -> None:
+        transformer_model_with_head = (
+            AutoModelForSequenceClassification.from_pretrained(
+                model_name_or_path, num_labels=1
+            )
+        )
+        self.transformer = getattr(
+            transformer_model_with_head, transformer_model_with_head.base_model_prefix
+        )
+        self.config = transformer_model_with_head.config
+        if isinstance(task_shapes, Mapping):
+            self.is_multitask = True
+            self.classification_heads = {
+                task_name: ClassificationHead(self.config, task_shape)
+                for task_name, task_shape in task_shapes.items()
+            }
+        else:
+            self.is_multitask = False
+            self.classification_head = ClassificationHead
 
     def forward(self, *args, **kwargs):
-        kwargs = {
-            parameter: value
-            for parameter, value in kwargs.items()
-            if not parameter == "labels"
-        }
-        base_outputs = self.base(*args, **kwargs)
-        return [
-            SequenceClassifierOutput(
-                loss=None,
-                logits=head(base_outputs),
-                hidden_states=base_outputs.hidden_states,
-                attentions=base_outputs.attentions,
-            )
-            for head in self.heads
-        ]
+        transformer_outputs = self.transformer(*args, **kwargs)
+        if self.is_multitask:
+            return {
+                task_name: task_head(transformer_outputs)
+                for task_name, task_head in self.classification_heads.items()
+            }
+        else:
+            return self.classification_head(transformer_outputs)
 
 
 # Copied from the huggingface RobertaClassificationHead
-class TransformerClassificationHead(torch.nn.Module):
-    def __init__(self, config, num_classes):
+class ClassificationHead(torch.nn.Module):
+    def __init__(self, config, task_shape):
         super().__init__()
         self.dense = torch.nn.Linear(config.hidden_size, config.hidden_size)
         classifier_dropout = (
@@ -62,7 +72,10 @@ class TransformerClassificationHead(torch.nn.Module):
             else config.hidden_dropout_prob
         )
         self.dropout = torch.nn.Dropout(classifier_dropout)
-        self.out_proj = torch.nn.Linear(config.hidden_size, num_classes)
+        self.task_shape = task_shape
+        self.out_proj = torch.nn.Linear(
+            config.hidden_size, task_shape  # Multiply out the shape if necessary
+        )  # Should be able to reshape to whatever task shape was defined
 
     def forward(self, features, **kwargs):
         x = features[0][:, 0, :]
@@ -72,41 +85,3 @@ class TransformerClassificationHead(torch.nn.Module):
         x = self.dropout(x)
         x = self.out_proj(x)
         return x
-
-
-class TransformerAutoModelForSequenceClassification(AutoModelForSequenceClassification):
-    def from_pretrained(transformer_name: str, num_labels: List[int]):
-        model = AutoModelForSequenceClassification.from_pretrained(
-            transformer_name, num_labels=1
-        )
-        if isinstance(num_labels, int):
-            model.config.multiheaded = False
-            num_labels = [num_labels]
-        elif isinstance(num_labels, (tuple, list)):
-            if len(num_labels) > 1:
-                model.config.multiheaded = True
-            else:
-                model.config.multiheaded = False
-        elif isinstance(num_labels, torch.Tensor):
-            if len(num_labels.shape) == 0:
-                model.config.multiheaded = False
-            else:
-                model.config.multiheaded = True
-
-        model = TransformerAutoModelForSequenceClassification.recapitate(
-            model, num_labels=num_labels
-        )
-
-        return model
-
-    def recapitate(model, num_labels):
-        config = TransformerConfig(model.config)
-        config.num_labels = num_labels
-        classifiers = torch.nn.ModuleList(
-            [
-                TransformerClassificationHead(config, num_classes)
-                for num_classes in num_labels
-            ]
-        )
-        base_model = getattr(model, model.base_model_prefix)
-        return TransformerMultiheaded(base_model, classifiers, config)

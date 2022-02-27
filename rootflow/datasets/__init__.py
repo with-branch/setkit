@@ -1,1 +1,1 @@
-from rootflow.datasets.example import ExampleDataset
+from rootflow.datasets.examples import ExampleNLP, ExampleTabular

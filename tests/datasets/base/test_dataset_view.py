@@ -100,7 +100,7 @@ def test_split_dataset_view():
     assert len(split_one) + len(split_two) == len(dataset_view)
 
 
-def test_concat_dataset_view_and_dataset():
+def test_dataset_view_and_dataset():
     dataset = DatasetForTesting()
     dataset_view = dataset[60:]
     concat_result = dataset_view + dataset
@@ -110,7 +110,7 @@ def test_concat_dataset_view_and_dataset():
     assert len(concat_result) == len(dataset_view) + len(dataset)
 
 
-def test_concat_dataset_view_and_dataset_view():
+def test_dataset_view_and_dataset_view():
     dataset = DatasetForTesting()
     dataset_view_one = dataset[5:30]
     dataset_view_two = dataset[40:]
@@ -121,7 +121,7 @@ def test_concat_dataset_view_and_dataset_view():
     assert len(concat_result) == len(dataset_view_one) + len(dataset_view_two)
 
 
-def test_concat_dataset_view_and_concat_dataset_view():
+def test_dataset_view_and_concat_dataset_view():
     dataset = DatasetForTesting()
     dataset_view = dataset[:40]
     concat_dataset_view = ConcatRootflowDatasetView(dataset, dataset)
@@ -130,3 +130,31 @@ def test_concat_dataset_view_and_concat_dataset_view():
     assert concat_result[len(dataset_view)]["data"] == 0
     assert concat_result[len(dataset_view)]["target"] == False
     assert len(concat_result) == len(dataset_view) + len(concat_dataset_view)
+
+
+def test_filter_dataset_view():
+    raise NotImplementedError
+
+
+def test_iter_dataset_veiw():
+    raise NotImplementedError
+
+
+def test_get_tasks_dataset_view():
+    raise NotImplementedError
+
+
+def test_get_task_shapes_dataset_view():
+    raise NotImplementedError
+
+
+def test_stats_dataset_view():
+    raise NotImplementedError
+
+
+def test_examples_dataset_view():
+    raise NotImplementedError
+
+
+def test_describe_dataset_view():
+    raise NotImplementedError

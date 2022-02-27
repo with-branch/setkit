@@ -123,3 +123,31 @@ def test_concat_concat_dataset_view_and_concat_dataset_view():
     assert len(concat_result) == len(concat_dataset_view_one) + len(
         concat_dataset_view_two
     )
+
+
+def test_filter_concat_dataset_view():
+    raise NotImplementedError
+
+
+def test_iter_concat_dataset_view():
+    raise NotImplementedError
+
+
+def test_get_tasks_concat_dataset_view():
+    raise NotImplementedError
+
+
+def test_get_task_shapes_concat_dataset_view():
+    raise NotImplementedError
+
+
+def test_stats_concat_dataset_view():
+    raise NotImplementedError
+
+
+def test_examples_concat_dataset_view():
+    raise NotImplementedError
+
+
+def test_describe_concat_dataset_view():
+    raise NotImplementedError
