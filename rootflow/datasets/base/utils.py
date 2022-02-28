@@ -1,4 +1,5 @@
-from typing import Any, Callable, Iterable, Mapping, Sequence, Union
+from typing import Any, Callable, Iterable, Mapping, Sequence, Union, Tuple
+import torch
 from torch.utils.data.dataloader import default_collate
 
 
@@ -51,3 +52,38 @@ def get_nested_data_types(object: Any) -> Union[dict, list, type]:
         return {key: get_nested_data_types(value) for key, value in object.items()}
     else:
         return type(object)
+
+
+def predict_task(target_list: list) -> Tuple[str, tuple]:
+    if not target_list:
+        return None
+
+    first_target = target_list[0]
+    if isinstance(first_target, Sequence) and not isinstance(first_target, str):
+        first_target_element = first_target[0]
+        if isinstance(first_target_element, (int, torch.LongTensor)):
+            # This needs to be adjusted to work with >1D tensors
+            max_element = max([max(target) for target in target_list])
+            if max_element > 1:
+                return ("multitarget", max_element)
+            max_list_sum = max([sum(target) for target in target_list])
+            if max_list_sum > 1:
+                return ("multitarget", len(first_target))
+            else:
+                return ("classification", len(first_target))
+        elif isinstance(first_target_element, (bool, torch.BoolTensor)):
+            pass
+        elif isinstance(first_target_element, (float, torch.FloatTensor)):
+            return ("regression", (len(first_target), *first_target_element.shape))
+    elif isinstance(first_target, (int, torch.LongTensor)):
+        max_class_val = max(target_list)
+        if max_class_val > 1:
+            return ("classification", max_class_val)
+        else:
+            return ("binary", 2)
+    elif isinstance(first_target, (bool, torch.BoolTensor)):
+        return ("binary", 2)
+    elif isinstance(first_target, (float, torch.FloatTensor)):
+        return ("regression", first_target.shape)
+    else:
+        return (None, None)

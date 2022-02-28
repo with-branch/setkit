@@ -104,7 +104,7 @@ class FunctionalDataset(Dataset):
         return rootflow_datasets.ConcatRootflowDatasetView(self, object)
 
     def tasks(self):
-        return [{"name": "my_task", "type": "binary", "shape": 4}]
+        raise NotImplementedError
 
     def stats(self):
         data_example = self[0]["data"]

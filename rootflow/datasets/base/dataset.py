@@ -50,6 +50,9 @@ class RootflowDataset(FunctionalDataset):
     def setup(self):
         pass
 
+    def tasks(self):
+        raise NotImplementedError
+
     def map(
         self,
         function: Union[Callable, List[Callable]],
@@ -158,7 +161,14 @@ class RootflowDataItem:
     def __init__(self, data, id=None, target=None) -> None:
         self.data = data
         self.id = id
-        self.target = target  # How do we differentiate between regression, single class or multiclass tasks?
+        # We may want to unpack singles for mappings and nested lists as wells
+        if isinstance(target, Sequence) and not isinstance(target, str):
+            target_length = len(target)
+            if target_length == 0:
+                target = None
+            elif target_length == 1:
+                target = target[0]
+        self.target = target
 
     def __iter__(self):
         return iter((self.id, self.data, self.target))
