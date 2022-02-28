@@ -18,3 +18,6 @@ dataset.describe()
 
 dataset = ExampleMultitask()
 dataset.describe()
+
+dataset = ExampleTabular()
+dataset.describe()

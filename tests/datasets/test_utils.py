@@ -1,4 +1,4 @@
-from rootflow.datasets.utils import *
+from rootflow.datasets.base.utils import *
 
 
 def test_batch():
@@ -73,9 +73,7 @@ def test_get_unique_unordered():
     assert get_unique(my_list, ordered=False) == [1, 2, 3, 4, 5]
 
 
-def test_get_nested_data_types():
-    raise NotImplementedError
-
-
-def test_get_target_shape():
+def test_predict_task():
+    # Remember to test inputs for tensor types
+    # Test for single element lists as well
     raise NotImplementedError

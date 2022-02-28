@@ -1,6 +1,6 @@
 import os
 import csv
-from rootflow.datasets.base import RootflowDataset, RootflowDataItem
+from rootflow.datasets.base.dataset import RootflowDataset, RootflowDataItem
 
 
 class ExampleTabular(RootflowDataset):
