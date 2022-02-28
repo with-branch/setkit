@@ -21,8 +21,8 @@ The organization of the `tests` subfolder should mirror that of the package, exp
 
 ### Documentation
 Code should be documented according to [PEP 257](https://www.python.org/dev/peps/pep-0257/). Additionaly, we will follow the Google python [docstring conventions](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
-Type hints are allowed and encouraged within the docstrings.
-In addition, use `:class:` and `:method:` annotations when appropriate.
+Since there is sometimes confusion as to whether an `__init__` docstring should be in the class level documentation or the method level we will stick to the method level. This maintains consistency, and most python type hinting is good about getting the user all of the information they need and handling the `__init__` documentation correctly.
+Type hints are allowed and encouraged within the docstrings; In addition, use `:class:` and `:method:` annotations when appropriate.
 
 As demonstration, here is the documentation for the [`rootflow.datasets.examples`](rootflow/datasets/examples.py) `ExampleTabular` dataset.
 ```python
