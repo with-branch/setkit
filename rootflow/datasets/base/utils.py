@@ -1,9 +1,27 @@
+"""Functionality utilities for rootflow datasets.
+
+Houses simple utility functions key to the behavior of rootflow datasets.
+"""
+
 from typing import Any, Callable, Iterable, Mapping, Sequence, Union, Tuple
 import torch
 from torch.utils.data.dataloader import default_collate
 
 
-def id_collate(unprocessed_batch):
+def id_collate(unprocessed_batch: list) -> Union[torch.Tensor, dict, tuple, list]:
+    """Collates batches with ids for :class:`torch.utils.data.DataLoader`.
+
+    Gathers out the batch ids which are problematic, non-tensor strings, and sends the
+    rest of the batch on to pytorch's :meth:`default_collate` function.
+
+    Args:
+        unprocessed_batch (list): A list of data elements returned from a :class:`Dataset`
+
+    Returns:
+        Union[torch.Tensor, dict, tuple, list]: A batch of data formatted according to
+        the type of the data elements in the batch. (i.e. a batch of dicts will return
+        a dict)
+    """
     batch_without_ids = []
     ids = []
     for id, data, label in unprocessed_batch:
@@ -13,7 +31,19 @@ def id_collate(unprocessed_batch):
     return (ids, processed_data, processed_labels[0])
 
 
-def batch(iterable, batch_size=1):
+def batch(iterable: Iterable, batch_size: int = 1) -> list:
+    """Batches an iterable.
+
+    Yeilds chunks from an iterable at a specified size. Note that the last batch will
+    have size of `len(iterable) % batch_size` instead of `batch_size`.
+
+    Args:
+        iterable (Iterable): The iterable to be batched
+        batch_size (:obj:`int`, optional): The size of each batch, except the last.
+
+    Yeilds:
+        list: A list of the iterable items in each batch.
+    """
     length = len(iterable)
     for ndx in range(0, length, batch_size):
         upper = min(ndx + batch_size, length)
@@ -41,25 +71,70 @@ def batch_enumerate(iterable: Iterable, batch_size: int = 1) -> Tuple[slice, lis
         yield (slice(ndx, upper), iterable[ndx:upper])
 
 
-def map_functions(obj: object, function_list: Iterable[Callable]):
+# TODO Using the term composition instead of map might be better and more mathematically accurate.
+def map_functions(obj: object, function_list: Iterable[Callable]) -> Any:
+    """Maps multiple functions on an object.
+
+    Returns the composition of multiple functions on an object. The functions are
+    called in the order given.
+
+    Args:
+        obj (object): The object which you would like to map multiple functions on.
+        function_list (Iterable[Callable]): An ordered collection of functions to map.
+
+    Returns:
+        Any: The result of the function_list mapped on obj.
+    """
     value = obj
     for function in function_list:
         value = function(value)
     return value
 
 
-def get_unique(input_iterator, ordered=True):
+def get_unique(input_iterator: Iterable, ordered: bool = True) -> list:
+    """Returns unique elements.
+
+    Returns only the unique elements of a given iterable, optionally in the order
+    which they were given. If the order is maintained, elements will appear in the
+    order of their first appearance.
+
+    Args:
+        input_iterator (Iterable): the iterator which you would like to reduce to only
+            its unique elements.
+        ordered (bool): A flag indicating wether the element order should be preserved.
+
+    Returns:
+        list: The unique items from input_iterator.
+    """
     if ordered:
         unique = list(set(input_iterator))
         unique.sort()
         return unique
     else:
+        # TODO A better algorithm should be used. This is worst case O(n**2) in time,
+        # and not great for memory either. Will cause problem for excessively large
+        # iterator inputs.
         seen = set()
         seen_add = seen.add
         return [item for item in input_iterator if not (item in seen or seen_add(item))]
 
 
 def get_nested_data_types(object: Any) -> Union[dict, list, type]:
+    """Returns the types of potentially nested structures.
+
+    Collects the types of Sequence and Mapping structures into a :obj:`list` or
+    :obj:`dict` respectively. The function will do so recursively. (For example,
+    potentially returning a list of dicts of types). When the object in question
+    is a Sequence, order is maintained. When the object in question is a Mapping
+    the keys are maintained.
+
+    Args:
+        object (Any): The object for which you would like its type(s).
+
+    Returns:
+        Union[dict, list, type]: Either a type, dict, or list, depending on the
+            type of object.
+    """
     if isinstance(object, Sequence) and not isinstance(object, str):
         return [get_nested_data_types(element) for element in object]
     elif isinstance(object, Mapping):
@@ -69,6 +144,22 @@ def get_nested_data_types(object: Any) -> Union[dict, list, type]:
 
 
 def infer_task_from_targets(target_list: list) -> Tuple[str, tuple]:
+    """Infers the type and shape of a task.
+
+    Infers the supervised task type and shape given a list of task targets.
+    Currently supported tasks are: `"classification"`, `"binary"`, `"multitarget"`,
+    and `"regression"`. (`"multitarget"` is a multitarget binary classification task).
+    If the targets are not of the types and shapes expected for any of the above
+    mentioned task types, then the function will instead return None for the type.
+
+    Args:
+        target_list (list): A list of targets for a particular supervised task.
+
+    Returns:
+        Tuple[str, tuple]: A tuple containing, respectively, the string corresponding
+            to the type of task and a tuple which describes the shape of the target,
+            given the infered task.
+    """
     if not target_list:
         return None
 
