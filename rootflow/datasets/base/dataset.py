@@ -1,4 +1,4 @@
-from typing import Callable, Sequence, Tuple, List, Union
+from typing import Callable, Mapping, Sequence, Tuple, List, Union
 import logging
 import os
 from rootflow import __location__ as ROOTFLOW_LOCATION
@@ -7,11 +7,14 @@ from rootflow.datasets.base.utils import (
     batch_enumerate,
     map_functions,
     get_unique,
+    infer_task_from_targets,
 )
 
 
 class RootflowDataset(FunctionalDataset):
-    def __init__(self, root: str = None, download: bool = True) -> None:
+    def __init__(
+        self, root: str = None, download: bool = True, tasks: List[dict] = None
+    ) -> None:
         super().__init__()
         self.DEFAULT_DIRECTORY = os.path.join(
             ROOTFLOW_LOCATION, "datasets/data", type(self).__name__, "data"
@@ -41,6 +44,11 @@ class RootflowDataset(FunctionalDataset):
         self.setup()
         logging.info(f"Setup {type(self).__name__}.")
 
+        if tasks is None:
+            tasks = self._infer_tasks()
+            logging.info(f"Tasks not specified, setting automatically")
+        self._tasks = tasks
+
     def prepare_data(self, path: str) -> List["RootflowDataItem"]:
         raise NotImplementedError
 
@@ -51,7 +59,32 @@ class RootflowDataset(FunctionalDataset):
         pass
 
     def tasks(self):
-        raise NotImplementedError
+        return self._tasks
+
+    def _infer_tasks(self):
+        example_targets = self.index(0)["target"]
+        if isinstance(example_targets, Mapping):
+            tasks = []
+
+            def multitask_generator(task_name):
+                for item in self:
+                    yield item["target"][task_name]
+
+            for task_name in example_targets.keys():
+                generator = multitask_generator(task_name)
+                task_type, task_shape = infer_task_from_targets(generator)
+                tasks.append(
+                    {"name": task_name, "type": task_type, "shape": task_shape}
+                )
+            return tasks
+        else:
+
+            def single_task_generator():
+                for item in self:
+                    yield item["target"]
+
+            task_type, task_shape = infer_task_from_targets(single_task_generator())
+            return [{"name": "task", "type": task_type, "shape": task_shape}]
 
     def map(
         self,
@@ -109,6 +142,9 @@ class RootflowDatasetView(FunctionalDataset):
         unique_indices = get_unique(view_indices, ordered=sorted)
         self.data_indices = unique_indices
 
+    def tasks(self):
+        return self.dataset.tasks()
+
     def map(self, function: Callable, targets: bool = False, batch_size: int = None):
         raise AttributeError("Cannot map over a dataset view!")
 
@@ -134,6 +170,51 @@ class ConcatRootflowDatasetView(FunctionalDataset):
         self.dataset_one = datatset_one
         self.dataset_two = dataset_two
         self.transition_point = len(datatset_one)
+
+        self._tasks = self._combine_tasks(datatset_one.tasks(), dataset_two.tasks())
+
+    def tasks(self):
+        return self._tasks
+
+    # This function is doing a bit too much
+    def _combine_tasks(task_list_one, task_list_two):
+        tasks = []
+
+        task_names_one = {task["name"] for task in task_list_one}
+        task_names_two = {task["name"] for task in task_list_two}
+        combined_names = task_names_one + task_names_two
+
+        for task_name in combined_names:
+            if task_name in task_names_one and task_name in task_names_two:
+                overlapping_task_one = [
+                    task for task in task_list_one if task["name"] == task_name
+                ][0]
+                overlapping_task_two = [
+                    task for task in task_list_one if task["name"] == task_name
+                ][0]
+
+                task_type_one = overlapping_task_one["type"]
+                task_type_two = overlapping_task_two["type"]
+                if not task_type_one == task_type_two:
+                    raise ValueError(
+                        f"Found two tasks with name {task_name} but types {task_type_one} and {task_type_two}"
+                    )
+
+                shape_one = overlapping_task_one["shape"]
+                shape_two = overlapping_task_two["shape"]
+                if not shape_one == shape_two:
+                    raise ValueError(
+                        f"Found two tasks with name {task_name} and type {task_type_one} but shapes {shape_one} and {shape_two}"
+                    )
+
+                tasks.append(overlapping_task_one)
+            elif task_name in task_names_one:
+                task = [task for task in task_list_one if task["name"] == task_name][0]
+                tasks.append(task)
+            elif task_name in task_names_two:
+                task = [task for task in task_list_two if task["name"] == task_name][0]
+                tasks.append(task)
+        return tasks
 
     def map(self, function: Callable, targets: bool = False, batch_size: int = None):
         raise AttributeError("Cannot map over concatenated datasets!")
@@ -161,7 +242,7 @@ class RootflowDataItem:
     def __init__(self, data, id=None, target=None) -> None:
         self.data = data
         self.id = id
-        # We may want to unpack singles for mappings and nested lists as wells
+        # We may want to unpack lists with only a single item for mappings and nested lists as well
         if isinstance(target, Sequence) and not isinstance(target, str):
             target_length = len(target)
             if target_length == 0:

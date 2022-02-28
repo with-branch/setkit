@@ -54,13 +54,13 @@ def get_nested_data_types(object: Any) -> Union[dict, list, type]:
         return type(object)
 
 
-def predict_task(target_list: list) -> Tuple[str, tuple]:
+def infer_task_from_targets(target_list: list) -> Tuple[str, tuple]:
     if not target_list:
         return None
 
-    first_target = target_list[0]
+    first_target = next(target_list)
     if isinstance(first_target, Sequence) and not isinstance(first_target, str):
-        first_target_element = first_target[0]
+        first_target_element = next(first_target_element)
         if isinstance(first_target_element, (int, torch.LongTensor)):
             # This needs to be adjusted to work with >1D tensors
             max_element = max([max(target) for target in target_list])
