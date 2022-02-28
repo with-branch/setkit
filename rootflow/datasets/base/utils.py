@@ -72,8 +72,10 @@ def infer_task_from_targets(target_list: list) -> Tuple[str, tuple]:
             else:
                 return ("classification", len(first_target))
         elif isinstance(first_target_element, (bool, torch.BoolTensor)):
-            pass
-        elif isinstance(first_target_element, (float, torch.FloatTensor)):
+            raise NotImplementedError
+        elif isinstance(first_target_element, float):
+            return ("regression", len(first_target))
+        elif isinstance(first_target_element, torch.FloatTensor):
             return ("regression", (len(first_target), *first_target_element.shape))
     elif isinstance(first_target, (int, torch.LongTensor)):
         max_class_val = max(target_list)
@@ -83,7 +85,9 @@ def infer_task_from_targets(target_list: list) -> Tuple[str, tuple]:
             return ("binary", 2)
     elif isinstance(first_target, (bool, torch.BoolTensor)):
         return ("binary", 2)
-    elif isinstance(first_target, (float, torch.FloatTensor)):
+    elif isinstance(first_target, float):
+        return ("regression", 1)
+    elif isinstance(first_target, torch.FloatTensor):
         return ("regression", first_target.shape)
     else:
         return (None, None)

@@ -62,7 +62,7 @@ class RootflowDataset(FunctionalDataset):
         return self._tasks
 
     def _infer_tasks(self):
-        example_targets = self.index(0)["target"]
+        example_targets = self.index(0)[1]
         if isinstance(example_targets, Mapping):
             tasks = []
 

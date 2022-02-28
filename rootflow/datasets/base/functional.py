@@ -109,10 +109,14 @@ class FunctionalDataset(Dataset):
     def stats(self):
         data_example = self[0]["data"]
         target_example = self[0]["target"]
+        tasks = self.tasks()
+        if len(tasks) == 1:
+            tasks = tasks[0]
         return {
             "length": len(self),
             "data_types": get_nested_data_types(data_example),
             "target_types": get_nested_data_types(target_example),
+            "tasks": tasks,
         }
 
     def examples(self, num_examples: int = 5):

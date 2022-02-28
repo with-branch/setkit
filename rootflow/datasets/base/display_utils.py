@@ -116,7 +116,7 @@ def format_examples_tabular(
     num_columns = len(column_names)
     column_seperator = " "
     column_width = (
-        table_width - (len(column_seperator) * (num_columns - 1))
+        table_width - (len(column_seperator) * (num_columns))
     ) // num_columns
 
     formatted_examples_string = ""

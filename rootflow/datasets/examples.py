@@ -22,7 +22,7 @@ class ExampleTabular(RootflowDataset):
                 RootflowDataItem(
                     [float(feature) for feature in item[1:5]],
                     id=item[0],
-                    target=int(item[5]),
+                    target=float(item[5]),
                 )
             )
         return data
