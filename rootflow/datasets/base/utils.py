@@ -20,7 +20,21 @@ def batch(iterable, batch_size=1):
         yield iterable[ndx:upper]
 
 
-def batch_enumerate(iterable, batch_size=1):
+def batch_enumerate(iterable: Iterable, batch_size: int = 1) -> Tuple[slice, list]:
+    """Enumerates in batches.
+
+    Enumerates an iterable in consistent length batches, yielding the slice and batch
+    for each. Note that the last batch will have size of `len(iterable) % batch_size`
+    instead of `batch_size`.
+
+    Args:
+        iterable (Iterable): Some iterable which we would like to split into batches.
+        batch_size (:obj:`int`, optional): The size of each batch, except the last.
+
+    Yields:
+        Tuple[slice, list]: A tuple containing, respectively, the slice corresponding
+            to the batch's location in the iterable and a list containing the batch.
+    """
     length = len(iterable)
     for ndx in range(0, length, batch_size):
         upper = min(ndx + batch_size, length)

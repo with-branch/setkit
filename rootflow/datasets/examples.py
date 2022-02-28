@@ -4,8 +4,9 @@ from rootflow.datasets.base.dataset import RootflowDataset, RootflowDataItem
 
 
 class ExampleTabular(RootflowDataset):
-    """
-    An example rootflow dataset for tabular data.
+    """An example rootflow dataset for tabular data.
+
+    Inherits from :class:`RootflowDataset`.
     The data is generated with 4 features calculated off of the targets.
     The targets are the integers range(1000)
     """
@@ -59,8 +60,9 @@ class ExampleTabular(RootflowDataset):
 
 
 class ExampleNLP(RootflowDataset):
-    """
-    An example rootflow dataset for NLP data.
+    """An example rootflow dataset for NLP data.
+
+    Inherits from :class:`RootflowDataset`.
     Each data item is "Hello there, my index is (odd/even)", depending on the index
     The targets are binary variables indicating if the index is odd or even.
     """
@@ -98,8 +100,9 @@ class ExampleNLP(RootflowDataset):
 
 
 class ExampleMultitask(RootflowDataset):
-    """
-    An example rootflow dataset for multitask data datasets.
+    """An example rootflow dataset for multitask data datasets.
+
+    Inherits from :class:`RootflowDataset`.
     Each data item is "Hello there, my index is (index)", depending on the index
     The targets are binary variables indicating if the index is odd or even, and
     a second indicating whether the index is divisible by 3.
