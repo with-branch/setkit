@@ -19,8 +19,8 @@ def id_collate(unprocessed_batch: list) -> Union[torch.Tensor, dict, tuple, list
 
     Returns:
         Union[torch.Tensor, dict, tuple, list]: A batch of data formatted according to
-        the type of the data elements in the batch. (i.e. a batch of dicts will return
-        a dict)
+            the type of the data elements in the batch. (i.e. a batch of dicts will return
+            a dict)
     """
     batch_without_ids = []
     ids = []
