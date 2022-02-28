@@ -11,19 +11,10 @@ dataset = ExampleNLP(download=False)
 # Or if you already have the data in a different location
 # just load it from there
 dataset = ExampleNLP(root="rootflow/datasets/data/ExampleNLP/data", download=True)
-
 dataset.describe()
-print(dataset.tasks())
-print(dataset.task_shapes())
 
 dataset = ExampleTabular()
 dataset.describe()
-print(dataset.tasks())
-print(dataset.task_shapes())
 
 dataset = ExampleMultitask()
 dataset.describe()
-print(dataset.tasks())
-print(dataset.task_shapes())
-
-print(dataset.DEFAULT_DIRECTORY)
