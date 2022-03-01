@@ -96,13 +96,13 @@ class RootflowDataset(FunctionalDataset):
                 logging.warning(f"Data could not be loaded from {root}.")
                 download = True
 
-        if download:
+        if download is True:
             logging.info(f"Downloading {type(self).__name__} data to location {root}.")
             if not os.path.exists(root):
                 os.makedirs(root)
             self.download(root)
             self.data = self.prepare_data(root)
-        else:
+        elif download is False:
             self.data = self.prepare_data(root)
         logging.info(f"Loaded {type(self).__name__} from {root}.")
 
