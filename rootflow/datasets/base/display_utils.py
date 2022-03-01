@@ -1,3 +1,10 @@
+"""Diplay utilities for rootflow datasets
+
+Attributes:
+    TAB_SIZE: Length of the tab for dataset display functions
+    TAB: A string of `TAB_SIZE` space characters.
+"""
+
 from typing import Any, List, Mapping, Sequence, Tuple
 
 import textwrap
@@ -6,7 +13,16 @@ TAB_SIZE = 4
 TAB = "".join([" " for i in range(TAB_SIZE)])
 
 
-def condense_with_elipse(string: str, max_width: int) -> str:
+def truncate_with_elipse(string: str, max_width: int) -> str:
+    """Truncates a string, placing an elipse at the end if the string is truncated.
+
+    Args:
+        string (str): String to truncate.
+        max_width (int): Width to truncate to.
+
+    Returns:
+        str: The truncated string.
+    """
     if len(string) > max_width:
         string = string[: max_width - 3]
         string += "..."
@@ -14,6 +30,7 @@ def condense_with_elipse(string: str, max_width: int) -> str:
 
 
 def format_data_element(element: Any) -> str:
+    """Formats a data element for console display"""
     if isinstance(element, str):
         return element.strip()
     elif isinstance(element, float):
@@ -24,12 +41,31 @@ def format_data_element(element: Any) -> str:
         return str(element)
 
 
-def format_docstring(docstring: dict, display_width: int) -> str:
+def format_docstring(docstring: str, display_width: int, indent: bool = False) -> str:
+    """Formats a docstring
+
+    Formats a docstring to conform to a specific display width, optionally indenting
+    the entire string.
+
+    Args:
+        docstring (str): The docstring to format.
+        display_width (int): Width to wrap the docstring.
+        indent (:obj:`bool`, optional): Whether to indent the docstring.
+
+    Returns:
+        str: Formatted docstring.
+    """
+    if docstring is None:
+        docstring = "(No Description)"
+    if indent:
+        display_width -= TAB_SIZE
     formatted_docstring = ""
-    docstring_lines = docstring.split("\n")
+    docstring_lines = [line.strip() for line in docstring.split("\n")]
     for line in docstring_lines:
         wrapped_lines = textwrap.wrap(line, width=display_width)
         for line in wrapped_lines:
+            if indent:
+                formatted_docstring += TAB
             formatted_docstring += line + "\n"
     return formatted_docstring[:-1]
 
@@ -37,6 +73,24 @@ def format_docstring(docstring: dict, display_width: int) -> str:
 def format_statistics(
     statistics: dict, display_width: int, indent: bool = False
 ) -> str:
+    """Formats dataset statistics
+
+    Formats a given dictionary to be printed in a pseudo-yaml manner. (Instead of
+    always breaking, single values will stay on the same line). The function will
+    do so recursively, through multiple layers of dictionaries and lists. Lines which
+    are longer than the specified width will be wrapped. The values of the dictionary
+    will be formatted using the `format_data_element` function, which will, for example
+    limit the precision of floating point values, among other things.
+
+    Args:
+        statistics (dict): A dict which we would like to format.
+        display_width (int): The width at which we would like to start wrapping.
+        indent (bool): Whether to begin the formatting with an indent.
+
+    Returns:
+        str: The formatted statistics.
+    """
+
     def _format_statistics(statistics: dict, display_width: int):
         lines = []
         for key, value in statistics.items():
@@ -68,6 +122,11 @@ def format_statistics(
 
 
 def flatten_example(example: dict) -> list:
+    """Expands the data and target components of a dataset example.
+
+    If the data or target fields of a given example are either a list or a dict, they
+    will be expanded out into a flat list.
+    """
     id, data, target = example["id"], example["data"], example["target"]
     flat_example = [id]
 
@@ -87,6 +146,12 @@ def flatten_example(example: dict) -> list:
 
 
 def get_flat_column_names(example: dict) -> List[str]:
+    """Flattens the data and target fields, returning names for each.
+
+    Returns a list of column names for the flattened version of the dataset example.
+    If the data or target fields are a dictionary, the keys are returned. If the data
+    or field is a list, the function will return feature_{i} for each expanded value.
+    """
     _, data, target = example["id"], example["data"], example["target"]
 
     column_names = ["id"]
@@ -107,9 +172,28 @@ def get_flat_column_names(example: dict) -> List[str]:
     return column_names
 
 
+# TODO Does not handle the case where we have an extreme number of columns for the
+# flattened examples. It may be necessary to implement some sort of column truncation.
+# (i.e. After n data columns, an elipse, then after n target columns, another)
 def format_examples_tabular(
     examples: List[dict], table_width: int, indent: bool = False
 ) -> str:
+    """Formats examples into a tabular display string.
+
+    Returns the given list of examples in a tabular format, dynamically resizing
+    columns and truncating table values where necessary. The function will
+    flatten the given examples if the `"data"` or `"target"`s are dicts or lists,
+    prefering to increase the number of columns instead of printing lists within
+    the table.
+
+    Args:
+        examples List[dict]: The data examples to format.
+        table_width (int): Desired width of the table in number of characters.
+        indent (:obj:`bool`, optional): Whether to indent the entire table.
+
+    Returns:
+        str: The formatted examples.
+    """
     if indent:
         table_width = table_width - TAB_SIZE
     column_names = get_flat_column_names(examples[0])
@@ -127,7 +211,7 @@ def format_examples_tabular(
     if indent:
         formatted_examples_string += TAB
     for column_header in column_names:
-        column_header = condense_with_elipse(column_header, column_width)
+        column_header = truncate_with_elipse(column_header, column_width)
         formatted_examples_string += (
             f"{column_header:<{column_width}}" + column_seperator
         )
@@ -140,7 +224,7 @@ def format_examples_tabular(
     for example in examples:
         example_string = ""
         for example_element in example:
-            column_formatted_element = condense_with_elipse(
+            column_formatted_element = truncate_with_elipse(
                 format_data_element(example_element), column_width
             )
             example_string += (

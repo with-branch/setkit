@@ -190,7 +190,7 @@ class FunctionalDataset(Dataset):
 
     def __add__(
         self, dataset: "FunctionalDataset"
-    ) -> rootflow_datasets.ConcatRootflowDatasetView:
+    ) -> "rootflow_datasets.ConcatRootflowDatasetView":
         """Adds two datasets together
 
         Creates a new ConcatRootflowDatasetView given `self` and another
@@ -271,11 +271,7 @@ class FunctionalDataset(Dataset):
             description_width = output_width
 
         print(f"{type(self).__name__}:")
-        dataset_doc = type(self).__doc__
-        if not dataset_doc is None:
-            print(format_docstring(dataset_doc, description_width))
-        else:
-            print("(No Description)")
+        print(format_docstring(type(self).__doc__, description_width, indent=True))
 
         print("\nStats:")
         print(format_statistics(self.stats(), description_width, indent=True))
