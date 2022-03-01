@@ -251,9 +251,7 @@ class FunctionalDataset(Dataset):
         num_examples = min(len(self), num_examples)
         return [self[i] for i in range(num_examples)]
 
-    # TODO consider changing the name of this function to summary, since that may be
-    # more intuitive.
-    def describe(self, output_width: int = None):
+    def summary(self, output_width: int = None):
         """Print a formatted summary of the dataset
 
         Collects the dataset docstring, statistics and some examples, then prints them
