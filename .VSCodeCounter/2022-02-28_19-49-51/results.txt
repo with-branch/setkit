@@ -1,0 +1,80 @@
+Date : 2022-02-28 19:49:51
+Directory : /home/tanner/Documents/repos/branch/rootflow
+Total : 39 files,  1506 codes, 589 comments, 421 blanks, all 2516 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| Python   |         37 |      1,426 |        589 |        393 |      2,408 |
+| Markdown |          2 |         80 |          0 |         28 |        108 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++---------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                          | files      | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                             |         39 |      1,506 |        589 |        421 |      2,516 |
+| examples                                                                                                      |          3 |         55 |          7 |         18 |         80 |
+| rootflow                                                                                                      |         23 |        867 |        577 |        201 |      1,645 |
+| rootflow/datasets                                                                                             |          7 |        655 |        568 |        145 |      1,368 |
+| rootflow/datasets/base                                                                                        |          5 |        550 |        549 |        123 |      1,222 |
+| rootflow/linear                                                                                               |          2 |          0 |          0 |          2 |          2 |
+| rootflow/loss                                                                                                 |          2 |          0 |          1 |          1 |          2 |
+| rootflow/models                                                                                               |          4 |         99 |          7 |         17 |        123 |
+| rootflow/models/nlp                                                                                           |          3 |         99 |          7 |         16 |        122 |
+| rootflow/training                                                                                             |          7 |        111 |          1 |         34 |        146 |
+| rootflow/training/metrics                                                                                     |          2 |         43 |          1 |         11 |         55 |
+| tests                                                                                                         |         10 |        484 |          4 |        171 |        659 |
+| tests/datasets                                                                                                |          6 |        471 |          2 |        165 |        638 |
+| tests/datasets/base                                                                                           |          4 |        392 |          0 |        136 |        528 |
+| tests/models                                                                                                  |          4 |         13 |          2 |          6 |         21 |
+| tests/models/nlp                                                                                              |          4 |         13 |          2 |          6 |         21 |
+| tests/models/nlp/transformers                                                                                 |          3 |          0 |          0 |          3 |          3 |
++---------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++---------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                                                                      | language | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| /home/tanner/Documents/repos/branch/rootflow/API.md                                                           | Markdown |         30 |          0 |         15 |         45 |
+| /home/tanner/Documents/repos/branch/rootflow/README.md                                                        | Markdown |         50 |          0 |         13 |         63 |
+| /home/tanner/Documents/repos/branch/rootflow/examples/functional_datasets.py                                  | Python   |         11 |          6 |          7 |         24 |
+| /home/tanner/Documents/repos/branch/rootflow/examples/hyperparameter_tuning.py                                | Python   |          9 |          0 |          5 |         14 |
+| /home/tanner/Documents/repos/branch/rootflow/examples/nlp_classification.py                                   | Python   |         35 |          1 |          6 |         42 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/__init__.py                                             | Python   |          2 |          0 |          2 |          4 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/datasets/__init__.py                                    | Python   |          0 |          0 |          2 |          2 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/datasets/base/__init__.py                               | Python   |          0 |          0 |          1 |          1 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/datasets/base/dataset.py                                | Python   |        221 |        234 |         50 |        505 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/datasets/base/display_utils.py                          | Python   |        131 |         76 |         31 |        238 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/datasets/base/functional.py                             | Python   |        121 |        134 |         24 |        279 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/datasets/base/utils.py                                  | Python   |         77 |        105 |         17 |        199 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/datasets/examples.py                                    | Python   |        105 |         19 |         20 |        144 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/linear/__init__.py                                      | Python   |          0 |          0 |          1 |          1 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/linear/preferences.py                                   | Python   |          0 |          0 |          1 |          1 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/loss/__init__.py                                        | Python   |          0 |          0 |          1 |          1 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/loss/sequential.py                                      | Python   |          0 |          1 |          0 |          1 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/models/__init__.py                                      | Python   |          0 |          0 |          1 |          1 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/models/nlp/__init__.py                                  | Python   |          0 |          0 |          1 |          1 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/models/nlp/transformers.py                              | Python   |         65 |          5 |         10 |         80 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/models/nlp/utils.py                                     | Python   |         34 |          2 |          5 |         41 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/training/__init__.py                                    | Python   |          0 |          0 |          1 |          1 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/training/base.py                                        | Python   |         18 |          0 |          5 |         23 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/training/metrics/__init__.py                            | Python   |          1 |          0 |          1 |          2 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/training/metrics/basic.py                               | Python   |         42 |          1 |         10 |         53 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/training/nlp.py                                         | Python   |         25 |          0 |          8 |         33 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/training/supervised.py                                  | Python   |         21 |          0 |          6 |         27 |
+| /home/tanner/Documents/repos/branch/rootflow/rootflow/training/utils.py                                       | Python   |          4 |          0 |          3 |          7 |
+| /home/tanner/Documents/repos/branch/rootflow/setup.py                                                         | Python   |         20 |          1 |          3 |         24 |
+| /home/tanner/Documents/repos/branch/rootflow/tests/datasets/base/test_concat_dataset_view.py                  | Python   |        116 |          0 |         38 |        154 |
+| /home/tanner/Documents/repos/branch/rootflow/tests/datasets/base/test_data_item.py                            | Python   |         29 |          0 |         11 |         40 |
+| /home/tanner/Documents/repos/branch/rootflow/tests/datasets/base/test_dataset.py                              | Python   |        128 |          0 |         45 |        173 |
+| /home/tanner/Documents/repos/branch/rootflow/tests/datasets/base/test_dataset_view.py                         | Python   |        119 |          0 |         42 |        161 |
+| /home/tanner/Documents/repos/branch/rootflow/tests/datasets/test_display_utils.py                             | Python   |         15 |          0 |         15 |         30 |
+| /home/tanner/Documents/repos/branch/rootflow/tests/datasets/test_utils.py                                     | Python   |         64 |          2 |         14 |         80 |
+| /home/tanner/Documents/repos/branch/rootflow/tests/models/nlp/test_utils.py                                   | Python   |         13 |          2 |          3 |         18 |
+| /home/tanner/Documents/repos/branch/rootflow/tests/models/nlp/transformers/test_classification_head.py        | Python   |          0 |          0 |          1 |          1 |
+| /home/tanner/Documents/repos/branch/rootflow/tests/models/nlp/transformers/test_classification_transformer.py | Python   |          0 |          0 |          1 |          1 |
+| /home/tanner/Documents/repos/branch/rootflow/tests/models/nlp/transformers/test_tokenizer.py                  | Python   |          0 |          0 |          1 |          1 |
+| Total                                                                                                         |          |      1,506 |        589 |        421 |      2,516 |
++---------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
