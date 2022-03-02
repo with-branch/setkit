@@ -1,0 +1,1 @@
+export GOOGLE_APPLICATION_CREDENTIALS=~/Branch/service_account/information_gate/potent-zodiac-323320-271d19d4df2e.json
