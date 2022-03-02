@@ -515,6 +515,16 @@ class RootflowDataItem:
                 target = target[0]
         self.target = target
 
+    def __getitem__(self, index: int):
+        if index == 0:
+            return self.id
+        elif index == 1:
+            return self.data
+        elif index == 2:
+            return self.target
+        else:
+            raise ValueError(f"Invalid index {index} for RootflowDataItem")
+
     def __iter__(self) -> Iterator[Tuple[Hashable, Any, Any]]:
         """Returns an iterator to support tuple unpacking
 
