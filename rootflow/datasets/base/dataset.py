@@ -384,7 +384,9 @@ class ConcatRootflowDatasetView(FunctionalDataset):
         self.dataset_two = dataset_two
         self.transition_point = len(datatset_one)
 
-        self._tasks = self._combine_tasks(datatset_one.tasks(), dataset_two.tasks())
+        self._tasks = ConcatRootflowDatasetView._combine_tasks(
+            datatset_one.tasks(), dataset_two.tasks()
+        )
 
     def tasks(self):
         """Returns a list of dataset tasks for the two datasets
@@ -410,7 +412,7 @@ class ConcatRootflowDatasetView(FunctionalDataset):
 
         task_names_one = {task["name"] for task in task_list_one}
         task_names_two = {task["name"] for task in task_list_two}
-        combined_names = task_names_one + task_names_two
+        combined_names = task_names_one | task_names_two
 
         for task_name in combined_names:
             if task_name in task_names_one and task_name in task_names_two:

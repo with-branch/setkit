@@ -206,9 +206,9 @@ class FunctionalDataset(Dataset):
             AttributeError: If `dataset` is not a :class:`FunctionalDataset`.
         """
         if not isinstance(dataset, FunctionalDataset):
-            raise AttributeError(f"Cannot add a dataset to {type(object)}")
+            raise AttributeError(f"Cannot add a {type(dataset)} to a dataset")
 
-        return rootflow_datasets.ConcatRootflowDatasetView(self, object)
+        return rootflow_datasets.ConcatRootflowDatasetView(self, dataset)
 
     def tasks(self):
         """Returns dataset target tasks"""
