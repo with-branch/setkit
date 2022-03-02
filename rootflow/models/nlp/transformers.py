@@ -2,20 +2,26 @@ from typing import List, Mapping, Union, Dict
 import torch
 from torch.nn import Module, ModuleDict, ModuleList
 from transformers import AutoModel, AutoTokenizer
-from rootflow.models.nlp.utils import tokenize_bookends
+from rootflow.models.auto.model import RootflowAutoModel
+from rootflow.models.nlp.utils import get_sequence_bookends_recursive, listify_tokens
 
 
 class Tokenizer:
     def __init__(
         self, model_name_or_path: str, max_token_length: int, mode: str = "split"
     ) -> None:
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        self.tokenizer = lambda tokenizer_input: self.tokenizer(
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        self.tokenizer = lambda tokenizer_input: tokenizer(
             tokenizer_input, padding="max_length", truncation=False
         )
         if mode == "split":
-            self._tokenize_function = lambda tokenization_input: tokenize_bookends(
-                tokenization_input, max_token_length, tokenizer=self.tokenizer
+            # Should bring out the tokenizer function, and just have bookends operate
+            # on the output tokens
+            self._tokenize_function = (
+                lambda tokenization_input: get_sequence_bookends_recursive(
+                    self.tokenizer(tokenization_input),
+                    max_token_length,
+                )
             )
         # (Reminders to implement these modes)
         elif mode == "first":
@@ -26,7 +32,8 @@ class Tokenizer:
             raise NotImplementedError(f"Mode {mode} is not implemented for Tokenizer!")
 
     def __call__(self, input_strings: Union[List[str], str]) -> Dict[str, torch.Tensor]:
-        return self._tokenize_function(input_strings)
+        tokenized = self._tokenize_function(input_strings)
+        return listify_tokens(tokenized)
 
 
 class Transformer(Module):
@@ -35,6 +42,7 @@ class Transformer(Module):
         model_name_or_path: str,
         head: Union[Module, ModuleList, ModuleDict] = None,
     ) -> None:
+        super().__init__()
         self.transformer = AutoModel.from_pretrained(model_name_or_path)
         self.config = self.transformer.config
         assert isinstance(
@@ -76,4 +84,44 @@ class ClassificationHead(Module):
         x = torch.tanh(x)
         x = self.dropout(x)
         x = self.out_proj(x)
+        x = torch.softmax(x)
         return x
+
+
+class AutoTransformer(RootflowAutoModel):
+    def __init__(self, model_name_or_path: str, tasks: List[dict]) -> None:
+        super().__init__(tasks=tasks)
+        self.transformer = AutoModel.from_pretrained(model_name_or_path)
+        self.config = self.transformer.config
+
+        self.head = ModuleDict(
+            {task["name"]: self.construct_head_from_task(task) for task in tasks}
+        )
+
+    def forward(self, *args, **kwargs):
+        transformer_outputs = self.transformer(*args, **kwargs)
+        return {
+            task_name: task_head(transformer_outputs)
+            for task_name, task_head in self.head.items()
+        }
+
+    def construct_head_from_task(self, task: dict) -> Module:
+        task_type, task_shape = task["type"], task["shape"]
+        if task_type is "classification":
+            return ClassificationHead(
+                self.config.hidden_size,
+                task_shape,
+                dropout=self.config.hidden_dropout_prob,
+            )
+        elif task_type is "binary" and task_shape == 2:
+            return ClassificationHead(
+                self.config.hidden_size,
+                task_shape,
+                dropout=self.config.hidden_dropout_prob,
+            )
+        elif task_type is "binary":
+            raise NotImplementedError("Cannot make a multitarget binary head")
+        elif task_type is "regression":
+            raise NotImplementedError("Cannot make a regression head")
+        else:
+            raise ValueError(f"{task_type} is not a recognized task type")

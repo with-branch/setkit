@@ -1,40 +1,52 @@
-from typing import Callable, Mapping, Union, List
+from typing import Any, Callable, Mapping, Sequence, Union, List, Dict
 import torch
+import numpy as np
 
 # Since we want to use batch padding to speed up the transformers later,
 # this function should not include extra padding
-def tokenize_bookends(
-    tokenization_input: Union[str, List[str]],
+def get_sequence_bookends_recursive(
+    tokens: Union[
+        Union[Sequence, Mapping],
+        List[Union[Sequence, Mapping]],
+        Dict[Any, Union[Sequence, Mapping]],
+    ],
     max_token_length: int,
-    tokenizer: Callable,
 ):
     end_token_length = int(max_token_length / 2)
     start_token_length = max_token_length - end_token_length
-    tokens = tokenizer(tokenization_input)
 
-    if isinstance(tokenization_input, (tuple, list)):
-        if isinstance(tokens[0], Mapping):
+    if isinstance(tokens, Sequence) and not isinstance(tokens, str):
+        element_example = tokens[0]
+        if isinstance(element_example, Sequence) and not isinstance(
+            element_example, str
+        ):
             return [
-                {
-                    key: get_bookends(data, start_token_length, end_token_length)
-                    for key, data in tokenized_item.items()
-                }
-                for tokenized_item in tokens
+                get_sequence_bookends_recursive(element, max_token_length)
+                for element in tokens
             ]
         else:
-            return [get_bookends(tokenized_item) for tokenized_item in tokens]
-    elif isinstance(tokenization_input, str):
-        if isinstance(tokens, Mapping):
-            return {
-                key: get_bookends(data, start_token_length, end_token_length)
-                for key, data in tokens.items()
-            }
-        else:
-            return get_bookends(tokens, start_token_length, end_token_length)
+            return get_sequence_bookends(tokens, start_token_length, end_token_length)
+    elif isinstance(tokens, Mapping):
+        return {
+            key: get_sequence_bookends_recursive(token_value, max_token_length)
+            for key, token_value in tokens.items()
+        }
+    else:
+        return get_sequence_bookends(tokens, start_token_length, end_token_length)
 
 
-def get_bookends(sequence, length_start, length_end):
-    if not isinstance(sequence, torch.Tensor):
-        sequence = torch.Tensor(sequence)
-    print(sequence)
-    return torch.cat((sequence[:length_start], sequence[-length_end:]), dim=0)
+def get_sequence_bookends(sequence, length_start, length_end):
+    start_component = sequence[:length_start]
+    end_component = sequence[-length_end:]
+    if isinstance(sequence, torch.Tensor):
+        return torch.cat((start_component, end_component), dim=0)
+    else:
+        return np.concatenate((start_component, end_component), axis=0)
+
+
+def listify_tokens(tokens: Dict[Any, list]) -> List[dict]:
+    keys = tokens.keys()
+    return [
+        {key: value for key, value in zip(keys, value_tuple)}
+        for value_tuple in zip(*tokens.values())
+    ]

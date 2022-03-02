@@ -170,10 +170,10 @@ def infer_task_from_targets(target_list: list) -> Tuple[str, tuple]:
             # This needs to be adjusted to work with >1D tensors
             max_element = max([max(target) for target in target_list])
             if max_element > 1:
-                return ("multitarget", max_element)
+                return ("binary", max_element)
             max_list_sum = max([sum(target) for target in target_list])
             if max_list_sum > 1:
-                return ("multitarget", len(first_target))
+                return ("binary", len(first_target))
             else:
                 return ("classification", len(first_target))
         elif isinstance(first_target_element, (bool, torch.BoolTensor)):

@@ -182,6 +182,15 @@ class RootflowDataset(FunctionalDataset):
             task_type, task_shape = infer_task_from_targets(single_task_generator())
             return [{"name": "task", "type": task_type, "shape": task_shape}]
 
+    # TODO: Decide how to handle map edge cases
+    # Represents some dangerous interior mutability
+    # Does not play well with views (What should we change and not change. Do we allow different parts of the dataset to have different data?)
+    # Does not play well with datasets who need to have data be memmaped or hdf5ed from disk
+
+    # While splitting out the dataset into three lists, (ids, data, targets) might
+    # make batch mapping faster because we can do true slice assignment, it may also
+    # decrease the load speed for indexing the dataset (cache locality of the different
+    # item members for the given index) TODO: Test this
     def map(
         self,
         function: Union[Callable, List[Callable]],
@@ -201,27 +210,37 @@ class RootflowDataset(FunctionalDataset):
                 over the data item targets, instead of the data.
             batch_size (:obj:`int`, optional): A batch size, if the functions to map
                 support or require batches of inputs.
+
+        Raises:
+            AssertionError: If a batched function does not return a list of the same
+                length as its inputs.
         """
-        # Represents some dangerous interior mutability
-        # Does not play well with views (What should we change and not change. Do we allow different parts of the dataset to have different data?)
-        # Does not play well with datasets who need to have data be memmaped from disk
         if targets:
             attribute = "target"
         else:
             attribute = "data"
 
         if batch_size is None:
-            for idx, example in enumerate(self.data):
-                data_item = self.data[idx]
+            for idx, data_item in enumerate(self.data):
                 setattr(data_item, attribute, function(getattr(data_item, attribute)))
+                self.data[idx] = data_item
         else:
             for slice, batch in batch_enumerate(self.data, batch_size):
                 mapped_batch_data = function(
                     [getattr(data_item, attribute) for data_item in batch]
                 )
-                for idx, mapped_example_data in zip(slice, mapped_batch_data):
+                assert isinstance(mapped_batch_data, Sequence) and not isinstance(
+                    mapped_batch_data, str
+                ), "Map function does not return a sequence over batch"
+                assert len(mapped_batch_data) == len(
+                    batch
+                ), "Map function does not return batch of same length as input"
+                for idx, mapped_example_data in zip(
+                    range(slice.start, slice.stop), mapped_batch_data
+                ):
                     data_item = self.data[idx]
                     setattr(data_item, attribute, mapped_example_data)
+                    self.data[idx] = data_item
 
         return self
 
@@ -365,7 +384,9 @@ class ConcatRootflowDatasetView(FunctionalDataset):
         self.dataset_two = dataset_two
         self.transition_point = len(datatset_one)
 
-        self._tasks = self._combine_tasks(datatset_one.tasks(), dataset_two.tasks())
+        self._tasks = ConcatRootflowDatasetView._combine_tasks(
+            datatset_one.tasks(), dataset_two.tasks()
+        )
 
     def tasks(self):
         """Returns a list of dataset tasks for the two datasets
@@ -391,7 +412,7 @@ class ConcatRootflowDatasetView(FunctionalDataset):
 
         task_names_one = {task["name"] for task in task_list_one}
         task_names_two = {task["name"] for task in task_list_two}
-        combined_names = task_names_one + task_names_two
+        combined_names = task_names_one | task_names_two
 
         for task_name in combined_names:
             if task_name in task_names_one and task_name in task_names_two:
