@@ -1,7 +1,7 @@
 from typing import List, Callable
 
-from rootflow.datasets.base import RootflowDataset
-from rootflow.tasks.base import RootflowTrainer
+from rootflow.datasets.base.dataset import RootflowDataset
+from rootflow.training.base import RootflowTrainer
 
 
 class ClassificationTrainer(RootflowTrainer):
