@@ -227,7 +227,7 @@ class FunctionalDataset(Dataset):
         data_example = self[0]["data"]
         target_example = self[0]["target"]
         tasks = self.tasks()
-        if len(tasks) == 1:
+        if tasks is not None and len(tasks) == 1:
             tasks = tasks[0]
         return {
             "length": len(self),

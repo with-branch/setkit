@@ -1,4 +1,7 @@
-def suggest_learning_rate(model, dataset):
+import torch
+
+
+def suggest_learning_rate(model, dataset, optimizer):
     pass
 
 

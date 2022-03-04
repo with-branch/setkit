@@ -1,4 +1,9 @@
-from rootflow.datasets.examples import ExampleMultitask, ExampleNLP, ExampleTabular
+from rootflow.datasets.examples import (
+    ExampleMultitask,
+    ExampleNLP,
+    ExampleTabular,
+    ExampleTextCorpus,
+)
 
 # Creating a new instance of a rootflow dataset will
 # automatically download that dataset if you don't have
@@ -20,4 +25,7 @@ dataset = ExampleMultitask()
 dataset.summary()
 
 dataset = ExampleTabular()
+dataset.summary()
+
+dataset = ExampleTextCorpus()
 dataset.summary()

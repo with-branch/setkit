@@ -1,3 +1,4 @@
+from asyncio import tasks
 from rootflow.datasets.examples import ExampleNLP
 from rootflow.models.nlp.transformers import (
     Tokenizer,
@@ -27,6 +28,7 @@ fine_tune_trainer = FineTuneTrainer(
     "./results",
     model,
     training_dataset=train_set,
+    validataion_dataset=validation_set,
     metrics=[F1, Accuracy],
 )
 fine_tune_trainer.train()
