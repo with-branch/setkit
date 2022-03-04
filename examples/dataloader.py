@@ -1,13 +1,15 @@
-from rootflow.datasets.examples import ExampleNLP
-from rootflow.datasets.base import DataLoader
+from rootflow.datasets.examples import ExampleTextCorpus
+from rootflow.datasets.base.loader import RootflowDataLoader
 from rootflow.models.nlp.transformers import Tokenizer
+from tqdm import tqdm
 
-dataset = ExampleNLP()
+dataset = ExampleTextCorpus()
 tokenizer = Tokenizer("roberta-base", 20)
-dataset.map(tokenizer, batch_size=512)
-dataloader = DataLoader(dataset, batch_size=128, num_workers=8)
+dataset.map(tokenizer, batch_size=128)
+dataloader = RootflowDataLoader(dataset, batch_size=128, num_workers=8, shuffle=True)
 
-for batch in dataloader:
-    print(batch.keys())
-    print(batch["data"])
+print(dataset[0])
+
+for batch in tqdm(dataloader):
     break
+print(batch)

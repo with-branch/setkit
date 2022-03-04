@@ -1,7 +1,7 @@
 from typing import Callable, Optional, Sequence
 
 from torch.utils.data import Dataset, DataLoader, Sampler
-from rootflow.datasets.base.utils import id_collate
+from rootflow.datasets.base.utils import default_collate_without_key
 
 
 class RootflowDataLoader(DataLoader):
@@ -22,10 +22,15 @@ class RootflowDataLoader(DataLoader):
         generator=None,
         *,
         prefetch_factor: int = 2,
-        persistent_workers: bool = False
+        persistent_workers: bool = False,
     ):
+        # TODO Potentially change this to support ids which are none, and use the tasks
+        # instead of checking for None?
         if collate_fn is None:
-            collate_fn = id_collate
+            if dataset[0]["target"] is None:
+                collate_fn = lambda collate_inputs: default_collate_without_key(
+                    collate_inputs, "target"
+                )
         super().__init__(
             dataset,
             batch_size,

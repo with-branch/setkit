@@ -3,32 +3,31 @@
 Houses simple utility functions key to the behavior of rootflow datasets.
 """
 
-from typing import Any, Callable, Iterable, Mapping, Sequence, Union, Tuple
+from typing import Any, Callable, Iterable, Mapping, Sequence, Union, Tuple, List
 import torch
 from torch.utils.data.dataloader import default_collate
 
 
-def id_collate(unprocessed_batch: list) -> Union[torch.Tensor, dict, tuple, list]:
-    """Collates batches with ids for :class:`torch.utils.data.DataLoader`.
-
-    Gathers out the batch ids which are problematic, non-tensor strings, and sends the
-    rest of the batch on to pytorch's :meth:`default_collate` function.
+def default_collate_without_key(
+    unprocessed_batch: List[dict],
+    key_to_remove: str,
+) -> Union[torch.Tensor, dict, tuple, list]:
+    """Collates batches removing the target.
 
     Args:
         unprocessed_batch (list): A list of data elements returned from a :class:`Dataset`
+        key_to_remove (str): The key to remove from the batch.
 
     Returns:
         Union[torch.Tensor, dict, tuple, list]: A batch of data formatted according to
             the type of the data elements in the batch. (i.e. a batch of dicts will return
             a dict)
     """
-    batch_without_ids = []
-    ids = []
-    for id, data, label in unprocessed_batch:
-        batch_without_ids.append((data, label))
-        ids.append(id)
-    processed_data, processed_labels = default_collate(batch_without_ids)
-    return (ids, processed_data, processed_labels[0])
+    unprocessed_batch = [
+        {key: value for key, value in batch_item.items() if not key == key_to_remove}
+        for batch_item in unprocessed_batch
+    ]
+    return default_collate(unprocessed_batch)
 
 
 def batch(iterable: Iterable, batch_size: int = 1) -> list:
