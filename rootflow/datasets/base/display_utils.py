@@ -5,7 +5,7 @@ Attributes:
     TAB: A string of `TAB_SIZE` space characters.
 """
 
-from typing import Any, List, Mapping, Sequence, Tuple
+from typing import Any, List, Mapping, Sequence, Tuple, Union
 
 import textwrap
 
@@ -91,23 +91,48 @@ def format_statistics(
         str: The formatted statistics.
     """
 
-    def _format_statistics(statistics: dict, display_width: int):
-        lines = []
-        for key, value in statistics.items():
-            if isinstance(value, Mapping):
-                lines.append(f"{key}:")
-                nested_lines = _format_statistics(value, display_width - TAB_SIZE)
-                lines += [TAB + line for line in nested_lines]
-            else:
-                if isinstance(value, Sequence) and not isinstance(value, str):
-                    value = [format_data_element(element) for element in value]
+    def _format_statistics(statistics: Union[dict, list], display_width: int):
+        if isinstance(statistics, Sequence) and not isinstance(statistics, str):
+            line_lists = [
+                _format_statistics(item, display_width - TAB_SIZE)
+                for item in statistics
+            ]
+
+            lines = []
+            modified_tab = "-" + TAB[1:]
+            for line_list in line_lists:
+                first_line = modified_tab + line_list[0]
+                lines += [
+                    first_line,
+                    *[TAB + line for line in line_list[1:]],
+                ]
+                lines += lines
+            return lines
+        elif isinstance(statistics, Mapping):
+            lines = []
+            for key, value in statistics.items():
+                if isinstance(value, Mapping):
+                    lines.append(f"{key}:")
+                    nested_lines = _format_statistics(value, display_width - TAB_SIZE)
+                    lines += [TAB + line for line in nested_lines]
                 else:
-                    value = format_data_element(value)
-                wraped_stat_lines = textwrap.wrap(
-                    f"{key}: {value}", width=display_width
-                )
-                lines += wraped_stat_lines
-        return lines
+                    if isinstance(value, Sequence) and not isinstance(value, str):
+                        element_example = value[0]
+                        if isinstance(element_example, Mapping):
+                            lines.append(f"{key}:")
+                            nested_lines = _format_statistics(
+                                value, display_width - TAB_SIZE
+                            )
+                            lines += [TAB + line for line in nested_lines]
+                        else:
+                            value = [format_data_element(element) for element in value]
+                            lines += textwrap.wrap(
+                                f"{key}: {value}", width=display_width
+                            )
+                    else:
+                        value = format_data_element(value)
+                        lines += textwrap.wrap(f"{key}: {value}", width=display_width)
+            return lines
 
     formatted_stats_string = ""
     if indent:
@@ -175,6 +200,9 @@ def get_flat_column_names(example: dict) -> List[str]:
 # TODO Does not handle the case where we have an extreme number of columns for the
 # flattened examples. It may be necessary to implement some sort of column truncation.
 # (i.e. After n data columns, an elipse, then after n target columns, another)
+
+# TODO Currently does not support None targets. Should remove the target column in
+# the case that it is an unlabeled dataset.
 def format_examples_tabular(
     examples: List[dict], table_width: int, indent: bool = False
 ) -> str:

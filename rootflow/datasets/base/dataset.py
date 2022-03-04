@@ -52,7 +52,7 @@ class RootflowDataset(FunctionalDataset):
     """
 
     def __init__(
-        self, root: str = None, download: bool = None, tasks: List[dict] = None
+        self, root: str = None, download: bool = None, tasks: List[dict] = []
     ) -> None:
         """Creates an instance of a rootflow dataset.
 
@@ -109,13 +109,13 @@ class RootflowDataset(FunctionalDataset):
         self.setup()
         logging.info(f"Setup {type(self).__name__}.")
 
-        if tasks is None:
+        if tasks is not None and len(tasks) == 0:
             tasks = self._infer_tasks()
             logging.info(f"Tasks not specified, setting automatically")
         self._tasks = tasks
 
     def prepare_data(self, directory: str) -> List["RootflowDataItem"]:
-        """Prepares data for a rootflow dataset
+        """Prepares data for a rootflow dataset.
 
         Loads the data from a directory path and returns a list of
         :class:`RootflowDataItem`s, one for each dataset example in dataset.
@@ -158,7 +158,9 @@ class RootflowDataset(FunctionalDataset):
 
     def _infer_tasks(self):
         """Splits targets and infers task information"""
-        example_targets = self.index(0)[1]
+        example_targets = self.index(0)[2]
+        if example_targets is None:
+            return None
         if isinstance(example_targets, Mapping):
             tasks = []
 
@@ -305,7 +307,7 @@ class RootflowDatasetView(FunctionalDataset):
         self.data_indices = unique_indices
 
     def tasks(self) -> List[dict]:
-        """Returns a list of dataset tasks
+        """Returns a list of dataset tasks.
 
         Returns a list containing each task for the dataset. The tasks are formatted
         as a dictionary with the following fields:
@@ -389,7 +391,7 @@ class ConcatRootflowDatasetView(FunctionalDataset):
         )
 
     def tasks(self):
-        """Returns a list of dataset tasks for the two datasets
+        """Returns a list of dataset tasks for the two datasets.
 
         Returns a list containing each unique task for the datasets. The tasks are
         formatted as a dictionary with the following fields:
