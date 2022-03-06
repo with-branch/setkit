@@ -24,14 +24,14 @@ dataset = dataset.map(tokenizer, batch_size=256)
 train_set, validation_set = dataset.split()
 dataset.summary()
 
-fine_tune_trainer = FineTuneTrainer(
-    "./results",
-    model,
-    training_dataset=train_set,
-    validataion_dataset=validation_set,
-    metrics=[F1, Accuracy],
-)
-fine_tune_trainer.train()
+# fine_tune_trainer = FineTuneTrainer(
+#     "./results",
+#     model,
+#     training_dataset=train_set,
+#     validataion_dataset=validation_set,
+#     metrics=[F1, Accuracy],
+# )
+# fine_tune_trainer.train()
 
 classification_trainer = SupervisedTrainer(
     "./results",
