@@ -28,9 +28,6 @@ class SupervisedTrainer:
         return RootflowDataLoader(dataset)
 
     def train(self) -> None:
-        # TODO pytorch_lightning training is somewhat problematic in the way that it
-        # couples the optimization logic with the model maybe, we should just write
-        # our own.
         trainer = Trainer(auto_lr_find=True)
-        trainer.tune(self.model)
+        trainer.tune(self.model, self.train_loader, self.validation_loader)
         trainer.fit(self.model, self.train_loader, self.validation_loader)

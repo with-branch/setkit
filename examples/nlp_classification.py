@@ -18,6 +18,7 @@ classification_head = ClassificationHead(input_size=768, num_classes=2, dropout=
 model = Transformer("roberta-base", head=classification_head)
 # Or alternatively
 model = AutoTransformer("roberta-base", tasks=dataset.tasks())
+print(type(model))
 
 tokenizer = Tokenizer("roberta-base", model.config.hidden_size, mode="split")
 dataset = dataset.map(tokenizer, batch_size=256)

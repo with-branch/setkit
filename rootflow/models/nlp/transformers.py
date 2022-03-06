@@ -9,6 +9,10 @@ from rootflow.models.nlp.utils import get_sequence_bookends_recursive, listify_t
 
 os.environ["TOKENIZERS_PARALLELISM"] = "True"
 
+from transformers import logging
+
+logging.set_verbosity_error()
+
 
 class Tokenizer:
     def __init__(
@@ -53,6 +57,7 @@ class Transformer(LightningModule):
             head, (Module, ModuleList, ModuleDict, None)
         ), "Head must be a torch Module or equivalent!"
         self.head = head
+        self.learning_rate = 1e3
 
     # Flags instead of type checking would make this faster
     def forward(self, *args, **kwargs):
@@ -89,6 +94,11 @@ class Transformer(LightningModule):
         elif isinstance(self.head, Module):
             return self.head.training_step(transformer_outputs)
 
+    def configure_optimizers(self):
+        return torch.optim.AdamW(
+            self.parameters(), lr=self.learning_rate, betas=(0.95, 0.999)
+        )
+
 
 # Copied from the huggingface RobertaClassificationHead
 class ClassificationHead(LightningModule):
@@ -112,7 +122,7 @@ class ClassificationHead(LightningModule):
 
     def training_step(self, batch, *args, **kwargs) -> torch.Tensor:
         print(batch)
-        self.forward(batch)
+        outputs = self.forward(batch)
         return 1.0
 
 
@@ -120,34 +130,36 @@ class AutoTransformer(RootflowAutoModel):
     # TODO Consider refactoring this into a __new__ function instead, so that
     # we can return a normal Transformer. (Just adding a function to transformer
     # also seems like a good option)
-    def __init__(self, model_name_or_path: str, tasks: List[dict]) -> None:
-        super().__init__(tasks=tasks)
-        self.transformer = AutoModel.from_pretrained(model_name_or_path)
-        self.config = self.transformer.config
-        self.head = ModuleDict(
-            {task["name"]: self.construct_head_from_task(task) for task in tasks}
+    def __new__(
+        cls: "AutoTransformer", model_name_or_path: str, tasks: List[dict]
+    ) -> Transformer:
+        super().__new__(cls, tasks=tasks)
+        temp_transformer = AutoModel.from_pretrained(model_name_or_path)
+        config = temp_transformer.config
+        del temp_transformer
+        head = ModuleDict(
+            {
+                task["name"]: AutoTransformer.construct_head_from_task(
+                    task=task, config=config
+                )
+                for task in tasks
+            }
         )
+        return Transformer(model_name_or_path=model_name_or_path, head=head)
 
-    def forward(self, *args, **kwargs):
-        transformer_outputs = self.transformer(*args, **kwargs)
-        return {
-            task_name: task_head(transformer_outputs)
-            for task_name, task_head in self.head.items()
-        }
-
-    def construct_head_from_task(self, task: dict) -> Module:
+    def construct_head_from_task(task: dict, config: dict) -> Module:
         task_type, task_shape = task["type"], task["shape"]
         if task_type is "classification":
             return ClassificationHead(
-                self.config.hidden_size,
+                config.hidden_size,
                 task_shape,
-                dropout=self.config.hidden_dropout_prob,
+                dropout=config.hidden_dropout_prob,
             )
         elif task_type is "binary" and task_shape == 2:
             return ClassificationHead(
-                self.config.hidden_size,
+                config.hidden_size,
                 task_shape,
-                dropout=self.config.hidden_dropout_prob,
+                dropout=config.hidden_dropout_prob,
             )
         elif task_type is "binary":
             raise NotImplementedError("Cannot make a multitarget binary head")
