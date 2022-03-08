@@ -43,7 +43,7 @@ class EmailCorpus(RootflowDataset):
         def get_mapped_item(data_item):
             if isinstance(data_item, str):
                 decoded_item = data_item.split(self.DATA_DELIMITER)
-                mapped_item = RootflowDataItem()
+                mapped_item = RootflowDataItem("")
 
                 mapped_item.id = decoded_item[0]
                 if not targets:
@@ -77,9 +77,12 @@ class EmailCorpus(RootflowDataset):
                     return data_item.data
 
         if batch_size is None:
-            for idx, data_item in enumerate(self.data):
-                self.data[idx] = get_mapped_item(self.data[idx])
+            data_in_memory = []
+            for idx, data_item in tqdm(enumerate(self.data), total=len(self.data)):
+                data_in_memory.append(get_mapped_item(self.data[idx]))
+            self.data = data_in_memory
         else:
+            data_in_memory = []
             for slice, batch in batch_enumerate(self.data, batch_size):
                 mapped_batch_data = function(
                     [get_attribute(data_item) for data_item in batch]
@@ -96,7 +99,7 @@ class EmailCorpus(RootflowDataset):
                     data_item = self.data[idx]
                     if isinstance(data_item, str):
                         decoded_item = data_item.split(self.DATA_DELIMITER)
-                        mapped_item = RootflowDataItem()
+                        mapped_item = RootflowDataItem("")
 
                         mapped_item.id = decoded_item[0]
                         if not targets:
@@ -106,13 +109,16 @@ class EmailCorpus(RootflowDataset):
                             mapped_item.data = decoded_item[2]
                             mapped_item.target = mapped_example_data
 
-                        self.data[idx] = mapped_item  
+                        data_in_memory.append(mapped_item)  
                     elif isinstance(data_item, RootflowDataItem):
                         if targets:
                             data_item.target = mapped_example_data
                         else:
                             data_item.data = mapped_example_data
                         self.data[idx] = data_item
+
+            if len(data_in_memory) > 0:
+                self.data = data_in_memory
 
         return self
 
@@ -202,39 +208,6 @@ class EmailCorpus(RootflowDataset):
             return zarr.open(file_path, mode='r')                              
         else:
             return FileNotFoundError
-
-def remove_attachments_from_mbox_string(mbox_string):
-        mbox_message = mailbox.mboxMessage(mbox_string)
-
-        start = time.time()
-        mbox_message = remove_attachments_from_mbox_message(mbox_message)
-        end = time.time()
-        tot = end-start
-
-        return mbox_message.as_string(), tot
-    
-#recursive function that removes both inline and normal attachments
-def remove_attachments_from_mbox_message(mbox_message):
-    #only messages that are multipart have attachments
-    if mbox_message.is_multipart():
-        for i, part in enumerate(mbox_message.get_payload()):
-            # if part.is_multipart():
-            #     for i, sub_part in enumerate(part.get_payload()):
-            #         if sub_part.get_content_disposition() in ['inline', 'attachment']:
-            #             #remove attachment
-            #             mbox_message.get_payload()[i] = ""
-
-            if part.get_content_disposition() in ['inline', 'attachment']:
-                #remove attachment
-                mbox_message.get_payload()[i] = ""
-
-    return mbox_message
-
-def check_mbox_message_part_for_attachment(mbox_part):
-    if mbox_part.get_content_disposition() in ['inline', 'attachment']:
-        return True
-    
-    return False
 
 
 if __name__ == "__main__":
