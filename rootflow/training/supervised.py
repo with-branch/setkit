@@ -17,17 +17,22 @@ class SupervisedTrainer:
         training_dataset: Union[Dataset, DataLoader],
         validation_dataset: Union[Dataset, DataLoader],
         metrics: Union[Callable, List[Callable]] = None,
+        *args,
+        **kwargs
     ) -> None:
         self.output_directory = results_directory
         self.model = model
         self.train_loader = self.get_loader(training_dataset)
         self.validation_loader = self.get_loader(validation_dataset)
         self.metrics = metrics
+        self.config = kwargs
 
     def get_loader(self, dataset):
-        return RootflowDataLoader(dataset)
+        return RootflowDataLoader(dataset, batch_size=2)
 
     def train(self) -> None:
-        trainer = Trainer(auto_lr_find=True)
+        trainer = Trainer(
+            auto_lr_find=True, default_root_dir=self.output_directory, **self.config
+        )
         trainer.tune(self.model, self.train_loader, self.validation_loader)
         trainer.fit(self.model, self.train_loader, self.validation_loader)

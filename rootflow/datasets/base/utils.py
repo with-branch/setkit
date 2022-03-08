@@ -186,7 +186,7 @@ def infer_task_from_targets(target_list: list) -> Tuple[str, tuple]:
         if max_class_val > 1:
             return ("classification", max_class_val)
         else:
-            return ("binary", 2)
+            return ("binary", max_class_val)
     elif isinstance(first_target, (bool, torch.BoolTensor)):
         return ("binary", 2)
     elif isinstance(first_target, float):

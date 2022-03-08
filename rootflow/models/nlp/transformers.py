@@ -49,8 +49,10 @@ class Transformer(LightningModule):
         self,
         model_name_or_path: str,
         head: Union[Module, ModuleList, ModuleDict] = None,
+        num_training_steps: int = 100000,
     ) -> None:
         super().__init__()
+        self.num_training_steps = num_training_steps
         self.transformer = AutoModel.from_pretrained(model_name_or_path)
         self.config = self.transformer.config
         assert isinstance(
@@ -74,33 +76,75 @@ class Transformer(LightningModule):
         else:
             return transformer_outputs
 
+    # TODO probably breaks when the number of tasks is greater than one,
+    # since torch.sum does not sum over lists
     def training_step(self, batch, *args, **kwargs) -> torch.Tensor:
-        print(batch)
-        transformer_outputs = self.transformer(batch)
+        batch["data"] = self.transformer(**batch["data"])
         if isinstance(self.head, ModuleDict):
             return torch.sum(
                 [
-                    task_head.training_step(transformer_outputs)
-                    for task_head in self.head.values()
+                    task_head.training_step(
+                        {
+                            "id": batch["id"],
+                            "data": batch["data"],
+                            "target": batch["target"][task_name],
+                        }
+                    )
+                    for task_name, task_head in self.head.items()
                 ]
             )
         elif isinstance(self.head, ModuleList):
             return torch.sum(
                 [
-                    task_head.training_step(transformer_outputs)
-                    for task_head in self.head
+                    task_head.training_step(
+                        {
+                            "id": batch["id"],
+                            "data": batch["data"],
+                            "target": batch["target"][task_idx],
+                        }
+                    )
+                    for task_idx, task_head in enumerate(self.head)
                 ]
             )
         elif isinstance(self.head, Module):
-            return self.head.training_step(transformer_outputs)
+            return self.head.training_step(batch)
 
     def configure_optimizers(self):
-        return torch.optim.AdamW(
+        optimizer = torch.optim.AdamW(
             self.parameters(), lr=self.learning_rate, betas=(0.95, 0.999)
         )
+        learning_rate_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer, max_lr=self.learning_rate, steps=self.num_training_steps
+        )
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {"scheduler": learning_rate_scheduler, "interval": "step"},
+        }
 
 
-# Copied from the huggingface RobertaClassificationHead
+class BinaryClassificationHead(LightningModule):
+    def __init__(self, input_size, num_classes, dropout: float = 0.1):
+        super().__init__()
+        self.dense = torch.nn.Linear(input_size, input_size)
+        self.dropout = torch.nn.Dropout(dropout)
+        self.out_proj = torch.nn.Linear(input_size, num_classes)
+        self.loss_fn = torch.nn.BCEWithLogitsLoss()
+
+    def forward(self, features, **kwargs):
+        x = features[0][:, 0, :]
+        x = self.dropout(x)
+        x = self.dense(x)
+        x = torch.tanh(x)
+        x = self.dropout(x)
+        x = self.out_proj(x)
+        return x
+
+    def training_step(self, batch, *args, **kwargs) -> torch.Tensor:
+        outputs = torch.squeeze(self.forward(batch["data"]), dim=1)
+        target = batch["target"].float()
+        return self.loss_fn(outputs, target)
+
+
 class ClassificationHead(LightningModule):
     def __init__(self, input_size, num_classes, dropout: float = 0.1):
         super().__init__()
@@ -121,8 +165,9 @@ class ClassificationHead(LightningModule):
         return x
 
     def training_step(self, batch, *args, **kwargs) -> torch.Tensor:
-        print(batch)
-        outputs = self.forward(batch)
+        outputs = self.forward(batch["data"])
+        target = batch["target"]
+        print(target)
         return 1.0
 
 
@@ -131,21 +176,33 @@ class AutoTransformer(RootflowAutoModel):
     # we can return a normal Transformer. (Just adding a function to transformer
     # also seems like a good option)
     def __new__(
-        cls: "AutoTransformer", model_name_or_path: str, tasks: List[dict]
+        cls: "AutoTransformer",
+        model_name_or_path: str,
+        tasks: List[dict],
+        num_training_steps: int,
     ) -> Transformer:
         super().__new__(cls, tasks=tasks)
         temp_transformer = AutoModel.from_pretrained(model_name_or_path)
         config = temp_transformer.config
         del temp_transformer
-        head = ModuleDict(
-            {
-                task["name"]: AutoTransformer.construct_head_from_task(
-                    task=task, config=config
-                )
-                for task in tasks
-            }
+        if len(tasks) == 1:
+            head = AutoTransformer.construct_head_from_task(
+                task=tasks[0], config=config
+            )
+        else:
+            head = ModuleDict(
+                {
+                    task["name"]: AutoTransformer.construct_head_from_task(
+                        task=task, config=config
+                    )
+                    for task in tasks
+                }
+            )
+        return Transformer(
+            model_name_or_path=model_name_or_path,
+            head=head,
+            num_training_steps=num_training_steps,
         )
-        return Transformer(model_name_or_path=model_name_or_path, head=head)
 
     def construct_head_from_task(task: dict, config: dict) -> Module:
         task_type, task_shape = task["type"], task["shape"]
@@ -155,14 +212,12 @@ class AutoTransformer(RootflowAutoModel):
                 task_shape,
                 dropout=config.hidden_dropout_prob,
             )
-        elif task_type is "binary" and task_shape == 2:
-            return ClassificationHead(
+        elif task_type is "binary":
+            return BinaryClassificationHead(
                 config.hidden_size,
                 task_shape,
                 dropout=config.hidden_dropout_prob,
             )
-        elif task_type is "binary":
-            raise NotImplementedError("Cannot make a multitarget binary head")
         elif task_type is "regression":
             raise NotImplementedError("Cannot make a regression head")
         else:
