@@ -1,0 +1,138 @@
+X-GM-THRID: 1725777587039075783
+X-Gmail-Labels: Inbox,Category Updates,Unread
+Delivered-To: morniemom@gmail.com
+Received: by 2002:a02:cc96:0:0:0:0:0 with SMTP id s22csp726112jap;
+        Fri, 25 Feb 2022 14:56:00 -0800 (PST)
+X-Google-Smtp-Source: 
+ ABdhPJzl+OFrNc6eU45OV2qxziXWaqpmY66eeusFCzc3AmAjqf3Y0xKFMaxgMwxbm99oJ6lTgwtS
+X-Received: by 2002:a17:90b:3cc:b0:1bc:692b:ad8 with SMTP id go12-20020a17090b03cc00b001bc692b0ad8mr5280545pjb.90.1645829760764;
+        Fri, 25 Feb 2022 14:56:00 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1645829760; cv=none;
+        d=google.com; s=arc-20160816;
+        b=jR4VEdhjjZm1ez/hnX4D/zVwtfwnHTPYCRxkGZ67Hhgk3Ajfo8EdTxTQ3WKlv0DKQu
+         h/uzOMMxB1E7R8vLtdEvUoaN4Jgul2dNY+Z4oPEsA7l2CvMw8ok/QDgUfcUc5xqTq9yr
+         eROxcAQdkwhFMj0jtIhOfBBKXVxFJ1eJ/myFbgY1DyfrHql2DysIZeQCX6+6WVRPGK3R
+         GeUXIjG+mf36C/KuxXea25ZOtkDqiNzG/H4BQjgjBVKJxCtjL+YYPa23PiUaol3rcVpD
+         Ks4hu4+4dMYQEtxx3fp8bpn3waz1wwNpBBLH0Q3fZ72y9Bk2wSyNLeqYBdVanL4sXghG
+         +fQg==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=list-id:list-unsubscribe:msg_delivery_data:replyto:mime-version
+         :subject:message-id:to:reply-to:from:date:content-transfer-encoding
+         :dkim-signature;
+        bh=u5YadS1t278P/wOfF9JQr0tUlyQSEEZQI8BOyX+ZG4M=;
+        b=mmTl0aECT54KRTLZCxAhz7++ESWFyLoifpLCEw9ABkxnJXceMy6ZazxPbRAeNrROiK
+         xM0KydE9HtC7S91DcgM4cWbZ8DHk3U8ojK6UVnwtyxvvVNDhCivhBBUJTPxEaNzfwLY0
+         zRG1Hd2s6GvF5GCHjIuUInwU9tUQEccWQwLZTETw6sy0S5DiB3moLs/NN5v+aNZjhuxf
+         bTYJoDvrOZ1sN6PWjD9SdTM/QZ7ou0FadHqCjHFc8C+fzv0A0rI8GNSTCCkMf4LZckm3
+         q55GAO3rYoJl+WbAt2qQ4At9zFYgbtuBMBPZfk6M5d9BZocB6kqaXxj+6uDO0r0e6tCl
+         6srg==
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@spe.schoolmessenger.com header.s=spe1
+ header.b=FsDx1L86;
+       spf=pass (google.com: domain of bounces@spe.schoolmessenger.com
+ designates 192.174.82.46 as permitted sender)
+ smtp.mailfrom=bounces@spe.schoolmessenger.com
+Return-Path: <bounces@spe.schoolmessenger.com>
+Received: from mta-82-46.sparkpostmail.com (mta-82-46.sparkpostmail.com.
+ [192.174.82.46])
+        by mx.google.com with ESMTPS id d12-20020a170902cecc00b0014fcbe95c4csi2858330plg.150.2022.02.25.14.56.00
+        for <morniemom@gmail.com>
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Fri, 25 Feb 2022 14:56:00 -0800 (PST)
+Received-SPF: pass (google.com: domain of bounces@spe.schoolmessenger.com
+ designates 192.174.82.46 as permitted sender) client-ip=192.174.82.46;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@spe.schoolmessenger.com header.s=spe1
+ header.b=FsDx1L86;
+       spf=pass (google.com: domain of bounces@spe.schoolmessenger.com
+ designates 192.174.82.46 as permitted sender)
+ smtp.mailfrom=bounces@spe.schoolmessenger.com
+X-MSFBL: Ut+4oKIAiSQ11mvlCCocDGU9NA5+lQyAGy1MHysJms8=|eyJtZXNzYWdlX2lkIjo
+	iNjIxNjgwNWUxOTYyNDc4MmVjYWYiLCJyIjoibW9ybmllbW9tQGdtYWlsLmNvbSI
+	sImN1c3RvbWVyX2lkIjoiMSIsInN1YmFjY291bnRfaWQiOiIxIiwidGVuYW50X2l
+	kIjoic2Nob29sbSJ9
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=spe.schoolmessenger.com; s=spe1; t=1645829760;
+	i=@spe.schoolmessenger.com;
+	bh=u5YadS1t278P/wOfF9JQr0tUlyQSEEZQI8BOyX+ZG4M=;
+	h=Content-Type:Date:From:To:Message-ID:Subject;
+	b=FsDx1L86QUs/3/RFq6gAOYMFjZPQl0fOOSUuNUjwi29KMi/ByI5MPq1BdgSOJ14Hl
+	 0ZR1tV0DEqnoswNBymkPxi6YyPvhz9zev/vUNqqV3B98kf9nlydv+PLWE/QVqAEcFe
+	 xM+ibRx8HxY6s8iw/0eVcGV6b1PsXYhDcBC0C5Xs=
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset="UTF-8"
+Authentication-Results: af.mta2vsmtp.cc.prd.sparkpost smtp.user=<hidden>;
+ auth=pass (LOGIN)
+Received: from [54.70.180.249] ([54.70.180.249:56365]
+ helo=shard6.produs1.schoolmessenger.com)
+	by af.mta2vsmtp.cc.prd.sparkpost (envelope-from
+ <bounces@spe.schoolmessenger.com>)
+	(ecelerity 4.4.0.17974 r(msys-ecelerity:tags/4.4.0.22)) with ESMTPSA
+ (cipher=AES-256-GCM)
+	id CE/FA-08617-08E59126; Fri, 25 Feb 2022 22:56:00 +0000
+Date: Fri, 25 Feb 2022 22:56:00 +0000
+From: O\'Connor High School <Broadcasts@schoolmessengermail.com>
+Reply-To: Broadcasts@schoolmessengermail.com
+To: <morniemom@gmail.com>
+Message-ID: <1315871720.34349037.1645829760089@schoolm.smtp.e.sparkpost.com>
+Subject: O.C. State Report Card
+MIME-Version: 1.0
+replyto: Broadcasts@schoolmessengermail.com
+msg_delivery_data: CUSTOMER_JOB,6,2493,263169,1947750,10,527
+List-Unsubscribe: 
+ <mailto:unsubscribe@spe.schoolmessenger.com?subject=unsubscribe:WwvJAyRNn9xbbgEVx1k98SCVDOfonq77rKiWwCkJq6Y~|eyAicmNwdF90byI6ICJtb3JuaWVtb21AZ21haWwuY29tIiwgInRlbmFudF9pZCI6ICJzY2hvb2xtIiwgImN1c3RvbWVyX2lkIjogIjEiLCAic3ViYWNjb3VudF9pZCI6ICIxIiwgIm1lc3NhZ2VfaWQiOiAiNjIxNjgwNWUxOTYyNDc4MmVjYWYiIH0~>
+List-Id: <schoolm.1.1.sparkpostmail.com>
+
+=0D=0A<p>Panther Family,<br>=0D=0A&nbsp;<br>=0D=0AAttached you will find a =
+copy of the 2020-2021 School Report Card produced by the Texas Education<br=
+>=0D=0AAgency for all schools in the state. The report provides information=
+ concerning student performance<br>=0D=0Aon the State of Texas Assessments =
+of Academic Readiness (STAAR), as well as information on<br>=0D=0Astudent e=
+nrollment, class size averages, and financial expenditures. It is intended =
+specifically to inform<br>=0D=0Aparents and guardians about a school=E2=80=
+=99s individual characteristics and its academic performance.&nbsp;<br>=0D=
+=0A&nbsp;<br>=0D=0AAlso attached are the 2020-2021 School Report Card defin=
+itions to help you understand the report.<br>=0D=0AThese definitions descri=
+be programs at all levels, so some definitions may not all apply to the sch=
+ool<br>=0D=0Ayour child attends.<br>=0D=0A&nbsp;<br>=0D=0ADue to the impact=
+ of COVID-19, campuses and districts received a label of Not Rated: Declare=
+d State<br>=0D=0Aof Disaster for the 2020=E2=80=9321 school year.&nbsp;<br>=
+=0D=0A&nbsp;<br>=0D=0AThe 2020-2021 School Report Cards are also available =
+on the Texas Education Agency=E2=80=99s website at<br>=0D=0Ahttp://tea.texa=
+s.gov/perfreport/src/index.html.</p>=0D=0A=0D=0A<p><a href=3D"http://track.=
+spe.schoolmessenger.com/f/a/CLL2v_doijzNh0yNI9pW0w~~/AAAAAQA~/RgRj-pIAP0R1a=
+HR0cHM6Ly9tc2cuc2Nob29sbWVzc2VuZ2VyLmNvbS9tLz9zPWxKeThjbjRaNnZVJm1hbD0yOWJl=
+YjBiMmVhMTdkOWU0ZWFlYmNlMmQxMzQyNjlmY2M2YWQ2YWM4Y2E3ZTBiOTcyNTlhOTJmYmZmOTE=
+wODZhVwdzY2hvb2xtQgpiFoBeGWJHguyvUhNtb3JuaWVtb21AZ21haWwuY29tWAQAAAAB">016_=
+O\'CONNOR HS_2020-2021_Revised_School Report Card.pdf</a>&nbsp;</p>=0D=0A=0D=
+=0A<p><a href=3D"http://track.spe.schoolmessenger.com/f/a/bSFBk5zhks0b-GvF7=
+JuYBA~~/AAAAAQA~/RgRj-pIAP0R1aHR0cHM6Ly9tc2cuc2Nob29sbWVzc2VuZ2VyLmNvbS9tLz=
+9zPWxKeThjbjRaNnZVJm1hbD01NjBiNjIxNGQ1MjliNWZmZWNkMGFkYzI2NGQ1NzdlMjNhM2ZkO=
+DBkMmE2NzkzNWJiZTUwYmJmZjc0NTIzNGIzVwdzY2hvb2xtQgpiFoBeGWJHguyvUhNtb3JuaWVt=
+b21AZ21haWwuY29tWAQAAAAB">2021-src-definitions.pdf</a>&nbsp;</p>=0D=0A=0D=
+=0A<p><a href=3D"http://track.spe.schoolmessenger.com/f/a/6_TdsUZdanSSsojZl=
+KdYqg~~/AAAAAQA~/RgRj-pIAP0R1aHR0cHM6Ly9tc2cuc2Nob29sbWVzc2VuZ2VyLmNvbS9tLz=
+9zPWxKeThjbjRaNnZVJm1hbD0wMWZiMDU2ZjIwNTZkZWE2ZTVjZDk1OGIxNjJkZGMyZDExZDU5Y=
+mZhZGI1ZjIwNzJkNzAzNzdhZjBiMzc4MGE4VwdzY2hvb2xtQgpiFoBeGWJHguyvUhNtb3JuaWVt=
+b21AZ21haWwuY29tWAQAAAAB">2021-src-definiciones.pdf</a>&nbsp;</p>=0D=0A=0D=
+=0A<p>&nbsp;</p>=0D=0A=0D=0A<p>Have a great weekend</p>=0D=0A=0D=0A<p>&nbsp=
+;</p>=0D=0A=0D=0A<p>&nbsp;</p><br><br><hr />=0D=0A=0D=0A<p style=3D"font-fa=
+mily:verdana; color:#6B6B6B; font-size:75%">=0D=0ANorthside Independent Sch=
+ool District would like to continue connecting with you via email.  If you =
+prefer to be removed from our list, please contact Northside Independent Sc=
+hool District directly.  To stop receiving all email messages distributed t=
+hrough our SchoolMessenger service, follow this link and confirm: <a href=
+=3D "http://track.spe.schoolmessenger.com/f/a/UhkAMlqfx3RKvAvBgh1rjA~~/AAAA=
+AQA~/RgRj-pIAP0RMaHR0cHM6Ly9nby5zY2hvb2xtZXNzZW5nZXIuY29tLyMvdW5zdWJzY3JpYm=
+UvMjQ5My9iVzl5Ym1sbGJXOXRRR2R0WVdsc0xtTnZiUVcHc2Nob29sbUIKYhaAXhliR4Lsr1ITb=
+W9ybmllbW9tQGdtYWlsLmNvbVgEAAAAAQ~~">Unsubscribe</a>=0D=0A</p>=0D=0A<p styl=
+e=3D"font-family:verdana; color:#6B6B6B; font-size:75%">=0D=0ASchoolMesseng=
+er is a notification service used by the nation\'s leading school systems to=
+ connect with parents, students and staff through voice, SMS text, email, a=
+nd social media.=0D=0A</p>=0D=0A<img border=3D"0" width=3D"1" height=3D"1" =
+alt=3D"" src=3D"http://track.spe.schoolmessenger.com/q/60K-Ihu75m6IjxA8cUEZ=
+4g~~/AAAAAQA~/RgRj-pIAPlcHc2Nob29sbUIKYhaAXhliR4Lsr1ITbW9ybmllbW9tQGdtYWlsL=
+mNvbVgEAAAAAQ~~">=0D=0A=0D=0A
+
+
+'

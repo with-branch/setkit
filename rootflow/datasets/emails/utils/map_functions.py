@@ -3,6 +3,9 @@ import copy
 import email
 import mailbox
 import io
+import os
+from tqdm import tqdm
+import json
 import re
 import quopri
 import base64
@@ -252,7 +255,7 @@ def decode_mbox_email_message(message: mailbox.mboxMessage):
     else:
         print(message.as_string())
         raise AttributeError(f'Content type: {content_type} is not handled')
-    return clean_text(message_text)
+    return clean_text(message_text), display_content, display_is_html
 
 def flatten_message(msg, from_addr=None, to_addrs=None,
                     mail_options=()):
@@ -314,6 +317,7 @@ def format_mbox_email_item(email: mailbox.mboxMessage) -> dict:
             subject = str(make_header(decode_header(subject)))
         except LookupError as e:
             print(subject)
+            
     return {
         'from' : email_sender,
         'subject' : subject,
@@ -322,3 +326,56 @@ def format_mbox_email_item(email: mailbox.mboxMessage) -> dict:
         'mbox' : flatten_message(email),
         "display_is_html" : is_html
     }
+
+def format_mbox(mbox_file):
+    email_file_paths = []
+    mbox_obj = mailbox.mbox(os.path.abspath(mbox_file))
+    total_emails = len(mbox_obj)
+    disc_rep_counter = 0
+    for email in tqdm(mbox_obj, total=total_emails):
+        try:
+            formatted_email = format_mbox_email_item(email)
+            mbox_string = formatted_email["mbox"]
+            mbox_string = mbox_string[2:]
+            mbox_string = mbox_string.replace("\\r\\n", "\n")
+            # mbox_string = mbox_string.replace(": \n", ":")
+            #make white space a little better but dont create more correct examples
+            mbox_string = mbox_string.replace("id\n", "id")
+            mbox_string = mbox_string.replace("d=google.com;\n", "d=google.com;")
+            mbox_string = mbox_string.replace("\\t", "\t")
+            mbox_string = mbox_string.replace("boundary=\"", "")
+
+            mbox_message = mailbox.mboxMessage(mbox_string)
+
+            if email["FROM"] != mbox_message["FROM"]:
+                f = open("tanner", "w")
+                f.write(mbox_string)
+                f.close()
+
+                f = open("correct", "w")
+                f.write(email.as_string())
+                f.close()
+
+                break
+                disc_rep_counter += 1
+            # else:
+            #     f = open("tanner", "w")
+            #     f.write(mbox_string)
+            #     f.close()
+
+            #     f = open("correct", "w")
+            #     f.write(email.as_string())
+            #     f.close()
+
+            #     break
+        except Exception as e:
+            print(e)
+            pass
+    print(f'Formatted mbox file {mbox_file}')
+    print(f'{disc_rep_counter} emails out of {total_emails}')
+    return email_file_paths
+
+if __name__ == "__main__":
+    MBOX_FILE_PATH = "/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails/Takeout/Mail/All mail Including Spam and Trash.mbox"
+
+    format_mbox(MBOX_FILE_PATH)

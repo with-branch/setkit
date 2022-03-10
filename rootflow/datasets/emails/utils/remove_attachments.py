@@ -38,13 +38,14 @@ def check_mbox_message_part_for_attachment(mbox_part):
     return False
 
 if __name__ == "__main__":
-    FILE_NAME = "/media/dallin/Linux_2/branch/datasets/emails/zarr/emails.zarr"
+    FILE_NAME = "/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails/zarr/emails.zarr"
     DATA_DELIMITER = "$$$data-separator$$$"
     zarr_file = zarr.open(FILE_NAME, mode='r')
 
 
     for i, encoded_string in tqdm(enumerate(zarr_file), total=len(zarr_file), smoothing=.9):
         if len(encoded_string) > 1_000_000:
+
             #remove attachments
             decoded_string = encoded_string.split(DATA_DELIMITER)
 
