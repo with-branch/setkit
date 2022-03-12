@@ -10,21 +10,20 @@ from rootflow.training.nlp import FineTuneTrainer
 from rootflow.training import SupervisedTrainer
 from rootflow.training.metrics import F1, Accuracy
 
-n_epochs = 5
+n_epochs = 20
 
 dataset = (
     ExampleNLP()
 )  # Automatically downloads the data if necessary (places in the rootflow package)
 
-classification_head = ClassificationHead(input_size=768, num_classes=2, dropout=0.1)
-model = Transformer(
-    "roberta-base", head=classification_head, num_training_steps=n_epochs * len(dataset)
-)
+# classification_head = ClassificationHead(input_size=768, num_classes=2, dropout=0.1)
+# model = Transformer(
+#     "roberta-base", head=classification_head, num_training_steps=n_epochs * len(dataset)
+# )
 # Or alternatively
 model = AutoTransformer(
     "roberta-base", tasks=dataset.tasks(), num_training_steps=n_epochs * len(dataset)
 )
-print(type(model))
 
 tokenizer = Tokenizer(
     "roberta-base", model.config.max_position_embeddings, mode="split"
@@ -48,6 +47,7 @@ classification_trainer = SupervisedTrainer(
     training_dataset=train_set,
     validation_dataset=validation_set,
     metrics=[F1, Accuracy],
-    epochs=n_epochs,
+    max_epochs=n_epochs,
+    gpus=1,
 )
 classification_trainer.train()

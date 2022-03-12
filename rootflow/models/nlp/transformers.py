@@ -1,3 +1,4 @@
+import gc
 from typing import List, Mapping, Union, Dict
 import os
 import torch
@@ -59,7 +60,7 @@ class Transformer(LightningModule):
             head, (Module, ModuleList, ModuleDict, None)
         ), "Head must be a torch Module or equivalent!"
         self.head = head
-        self.learning_rate = 1e3
+        self.learning_rate = 1e-3
 
     # Flags instead of type checking would make this faster
     def forward(self, *args, **kwargs):
@@ -79,7 +80,10 @@ class Transformer(LightningModule):
     # TODO probably breaks when the number of tasks is greater than one,
     # since torch.sum does not sum over lists
     def training_step(self, batch, *args, **kwargs) -> torch.Tensor:
+        print("training_step")
+        print(batch["data"]["input_ids"].shape)
         batch["data"] = self.transformer(**batch["data"])
+        print("Made it past the transformer")
         if isinstance(self.head, ModuleDict):
             return torch.sum(
                 [
@@ -108,13 +112,51 @@ class Transformer(LightningModule):
             )
         elif isinstance(self.head, Module):
             return self.head.training_step(batch)
+        gc.collect()
+
+    # TODO probably breaks when the number of tasks is greater than one,
+    # since torch.sum does not sum over lists
+    def validation_step(self, batch, *args, **kwargs) -> torch.Tensor:
+        print("validation_step")
+        print(batch["data"]["input_ids"].shape)
+        with torch.no_grad():
+            batch["data"] = self.transformer(**batch["data"])
+            if isinstance(self.head, ModuleDict):
+                return torch.sum(
+                    [
+                        task_head.training_step(
+                            {
+                                "id": batch["id"],
+                                "data": batch["data"],
+                                "target": batch["target"][task_name],
+                            }
+                        )
+                        for task_name, task_head in self.head.items()
+                    ]
+                )
+            elif isinstance(self.head, ModuleList):
+                return torch.sum(
+                    [
+                        task_head.training_step(
+                            {
+                                "id": batch["id"],
+                                "data": batch["data"],
+                                "target": batch["target"][task_idx],
+                            }
+                        )
+                        for task_idx, task_head in enumerate(self.head)
+                    ]
+                )
+            elif isinstance(self.head, Module):
+                return self.head.training_step(batch)
+        gc.collect()
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
             self.parameters(), lr=self.learning_rate, betas=(0.95, 0.999)
         )
         learning_rate_scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer, max_lr=self.learning_rate, steps=self.num_training_steps
+            optimizer, max_lr=self.learning_rate, total_steps=self.num_training_steps
         )
         return {
             "optimizer": optimizer,
@@ -143,6 +185,12 @@ class BinaryClassificationHead(LightningModule):
         outputs = torch.squeeze(self.forward(batch["data"]), dim=1)
         target = batch["target"].float()
         return self.loss_fn(outputs, target)
+
+    def validation_step(self, batch, *args, **kwargs) -> torch.Tensor:
+        with torch.no_grad():
+            outputs = torch.squeeze(self.forward(batch["data"]), dim=1)
+            target = batch["target"].float()
+            return self.loss_fn(outputs, target)
 
 
 class ClassificationHead(LightningModule):

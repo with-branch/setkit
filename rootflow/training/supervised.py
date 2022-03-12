@@ -28,7 +28,7 @@ class SupervisedTrainer:
         self.config = kwargs
 
     def get_loader(self, dataset):
-        return RootflowDataLoader(dataset, batch_size=2)
+        return RootflowDataLoader(dataset, batch_size=32, num_workers=12)
 
     def train(self) -> None:
         trainer = Trainer(
