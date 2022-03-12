@@ -1,33 +1,26 @@
-from decimal import InvalidContext
-from genericpath import isfile
+from typing import List
+
 import os
-import mailbox
-import time
-
-from typing import (
-    Callable,
-    Hashable,
-    Mapping,
-    Sequence,
-    Tuple,
-    List,
-    Union,
-    Any,
-    Iterator,
-)
-
-from numpy import False_, full
-from rootflow.datasets.base import RootflowDataset, RootflowDataItem
 from os.path import exists
 from tqdm import tqdm
 import json
-import numcodecs
 import zarr
+
 from rootflow.datasets.base.dataset import RootflowDatasetView
-from rootflow.datasets.base.utils import map_functions, batch_enumerate
+from rootflow.datasets.base import RootflowDataset, RootflowDataItem
 
 
-class EmailCorpus(RootflowDataset):
+class LabeledEmails(RootflowDataset):
+    """Labeled emails from the Branch email corpus.
+
+    Inherits from :class:`RootflowDataset`.
+    All emails from the branch corpus which were labeled by an oracle. Targets are
+    binary classifications indicating if the particular labeler would have liked to
+    receive that email as a notification. The specific prompt was as follows:
+        "If you received this email today, would you want to receive a notification
+        or alert about the email, based on its contents?"
+    """
+
     BUCKET = "rootflow"
     DATASET_PATH = "datasets/email-notification"
     FILE_NAME = "emails.zarr"
@@ -134,6 +127,14 @@ class EmailCorpus(RootflowDataset):
             return FileNotFoundError
 
     def split_by_oracle_id(self) -> List[RootflowDataset]:
+        """Splits dataset into a list of datasets.
+
+        Creates a dataset for each labeler (oracle) in the Branch email corpus. The
+        datasets are views, so no data is duplicated.
+
+        Returns:
+            List[RootflowDataset] : A list of the datasets, split by oracle_id.
+        """
         oracle_indices = {}
         for idx, data_item in self.data:
             oracle_id = data_item.data["oracle_id"]
@@ -151,9 +152,4 @@ class EmailCorpus(RootflowDataset):
 
 
 if __name__ == "__main__":
-    # import cProfile
-    # cProfile.run("EmailCorpus()")
-
-    dataset = EmailCorpus(
-        root="/media/dallin/Linux_2/branch/datasets/emails/zarr", download=False
-    )
+    dataset = LabeledEmails()
