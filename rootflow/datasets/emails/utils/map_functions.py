@@ -1,3 +1,4 @@
+from ast import literal_eval
 from email.charset import BASE64
 import copy
 import email
@@ -332,31 +333,39 @@ def format_mbox(mbox_file):
     mbox_obj = mailbox.mbox(os.path.abspath(mbox_file))
     total_emails = len(mbox_obj)
     disc_rep_counter = 0
+
+    discrep_list = []
     for email in tqdm(mbox_obj, total=total_emails):
         try:
             formatted_email = format_mbox_email_item(email)
             mbox_string = formatted_email["mbox"]
-            mbox_string = mbox_string[2:]
-            mbox_string = mbox_string.replace("\\r\\n", "\n")
-            # mbox_string = mbox_string.replace(": \n", ":")
-            #make white space a little better but dont create more correct examples
-            mbox_string = mbox_string.replace("id\n", "id")
-            mbox_string = mbox_string.replace("d=google.com;\n", "d=google.com;")
-            mbox_string = mbox_string.replace("\\t", "\t")
-            mbox_string = mbox_string.replace("boundary=\"", "")
+            # mbox_string = mbox_string[2:]
+            # mbox_string = mbox_string.replace("\\r\\n", "\n")
+            # mbox_string = mbox_string.replace("id\n", "id")
+            # mbox_string = mbox_string.replace("d=google.com;\n", "d=google.com;")
+            # mbox_string = mbox_string.replace("\\'", "\'")
+            # mbox_string = mbox_string.replace("\n <", " <")
+
+            mbox_string = literal_eval(mbox_string).decode("utf-8")
 
             mbox_message = mailbox.mboxMessage(mbox_string)
 
-            if email["FROM"] != mbox_message["FROM"]:
-                f = open("tanner", "w")
-                f.write(mbox_string)
-                f.close()
+            # temp_from = mbox_message['FROM']
+            # temp_from = temp_from.replace("\n", "")
+            # temp_from = temp_from.replace("\t", "")
+            # temp_from = temp_from.replace("\r", "")
+            # temp_from = temp_from.replace(" ", "")
 
-                f = open("correct", "w")
-                f.write(email.as_string())
-                f.close()
+            # correct_from = email["FROM"]
+            # correct_from = correct_from.replace("\n", "")
+            # correct_from = correct_from.replace("\t", "")
+            # correct_from = correct_from.replace("\r", "")
+            # correct_from = correct_from.replace(" ", "")
 
-                break
+            # if temp_from != correct_from:
+            #     discrep_list.append((correct_from, temp_from))
+
+            if mbox_message["FROM"] == None:
                 disc_rep_counter += 1
             # else:
             #     f = open("tanner", "w")
@@ -372,7 +381,7 @@ def format_mbox(mbox_file):
             print(e)
             pass
     print(f'Formatted mbox file {mbox_file}')
-    print(f'{disc_rep_counter} emails out of {total_emails}')
+    print(f'{disc_rep_counter} emails out of {len(mbox_obj)} were incorrect')
     return email_file_paths
 
 if __name__ == "__main__":

@@ -39,110 +39,88 @@ class EmailCorpus(RootflowDataset):
         self.prefix = self.DATASET_PATH + prefix
         super().__init__(root, download, tasks)
 
-    def map(self, function: Union[Callable, List[Callable]], targets: bool = False, batch_size: int = None) -> Union["RootflowDataset", "RootflowDatasetView"]:
-        def get_mapped_item(data_item):
-            if isinstance(data_item, str):
-                decoded_item = data_item.split(self.DATA_DELIMITER)
-                mapped_item = RootflowDataItem("")
+    # def map(self, function: Union[Callable, List[Callable]], targets: bool = False, batch_size: int = None) -> Union["RootflowDataset", "RootflowDatasetView"]:
+    #     def get_mapped_item(data_item):
+    #         if isinstance(data_item, str):
+    #             decoded_item = data_item.split(self.DATA_DELIMITER)
+    #             mapped_item = RootflowDataItem("")
 
-                mapped_item.id = decoded_item[0]
-                if not targets:
-                    mapped_item.data = function(decoded_item[1])
-                    mapped_item.target = None
-                else:
-                    mapped_item.data = decoded_item[2]
-                    mapped_item.target = function(None)
+    #             mapped_item.id = decoded_item[0]
+    #             if not targets:
+    #                 mapped_item.data = function(decoded_item[1])
+    #                 mapped_item.target = None
+    #             else:
+    #                 mapped_item.data = decoded_item[2]
+    #                 mapped_item.target = function(None)
 
-                return mapped_item   
-            elif isinstance(data_item, RootflowDataItem):
-                if targets:
-                    data_item.target = function(data_item.target)
-                else:
-                    data_item.data = function(data_item.data)
-                return data_item
+    #             return mapped_item   
+    #         elif isinstance(data_item, RootflowDataItem):
+    #             if targets:
+    #                 data_item.target = function(data_item.target)
+    #             else:
+    #                 data_item.data = function(data_item.data)
+    #             return data_item
 
-            return InvalidContext
+    #         return InvalidContext
 
-        def get_attribute(data_item):
-            if isinstance(data_item, str):
-                decoded_item = data_item.split(self.DATA_DELIMITER)
-                if targets:
-                    return None
-                else:
-                    return decoded_item[1]
-            elif isinstance(data_item, RootflowDataItem):
-                if targets:
-                    return data_item.target
-                else:
-                    return data_item.data
+    #     def get_attribute(data_item):
+    #         if isinstance(data_item, str):
+    #             decoded_item = data_item.split(self.DATA_DELIMITER)
+    #             if targets:
+    #                 return None
+    #             else:
+    #                 return decoded_item[1]
+    #         elif isinstance(data_item, RootflowDataItem):
+    #             if targets:
+    #                 return data_item.target
+    #             else:
+    #                 return data_item.data
 
-        if batch_size is None:
-            data_in_memory = []
-            for idx, data_item in tqdm(enumerate(self.data), total=len(self.data)):
-                data_in_memory.append(get_mapped_item(self.data[idx]))
-            self.data = data_in_memory
-        else:
-            data_in_memory = []
-            for slice, batch in batch_enumerate(self.data, batch_size):
-                mapped_batch_data = function(
-                    [get_attribute(data_item) for data_item in batch]
-                )
-                assert isinstance(mapped_batch_data, Sequence) and not isinstance(
-                    mapped_batch_data, str
-                ), "Map function does not return a sequence over batch"
-                assert len(mapped_batch_data) == len(
-                    batch
-                ), "Map function does not return batch of same length as input"
-                for idx, mapped_example_data in zip(
-                    range(slice.start, slice.stop), mapped_batch_data
-                ):
-                    data_item = self.data[idx]
-                    if isinstance(data_item, str):
-                        decoded_item = data_item.split(self.DATA_DELIMITER)
-                        mapped_item = RootflowDataItem("")
+    #     if batch_size is None:
+    #         data_in_memory = []
+    #         for idx, data_item in tqdm(enumerate(self.data), total=len(self.data)):
+    #             data_in_memory.append(get_mapped_item(self.data[idx]))
+    #         self.data = data_in_memory
+    #     else:
+    #         data_in_memory = []
+    #         for slice, batch in batch_enumerate(self.data, batch_size):
+    #             mapped_batch_data = function(
+    #                 [get_attribute(data_item) for data_item in batch]
+    #             )
+    #             assert isinstance(mapped_batch_data, Sequence) and not isinstance(
+    #                 mapped_batch_data, str
+    #             ), "Map function does not return a sequence over batch"
+    #             assert len(mapped_batch_data) == len(
+    #                 batch
+    #             ), "Map function does not return batch of same length as input"
+    #             for idx, mapped_example_data in zip(
+    #                 range(slice.start, slice.stop), mapped_batch_data
+    #             ):
+    #                 data_item = self.data[idx]
+    #                 if isinstance(data_item, str):
+    #                     decoded_item = data_item.split(self.DATA_DELIMITER)
+    #                     mapped_item = RootflowDataItem("")
 
-                        mapped_item.id = decoded_item[0]
-                        if not targets:
-                            mapped_item.data = mapped_example_data
-                            mapped_item.target = None
-                        else:
-                            mapped_item.data = decoded_item[2]
-                            mapped_item.target = mapped_example_data
+    #                     mapped_item.id = decoded_item[0]
+    #                     if not targets:
+    #                         mapped_item.data = mapped_example_data
+    #                         mapped_item.target = None
+    #                     else:
+    #                         mapped_item.data = decoded_item[2]
+    #                         mapped_item.target = mapped_example_data
 
-                        data_in_memory.append(mapped_item)  
-                    elif isinstance(data_item, RootflowDataItem):
-                        if targets:
-                            data_item.target = mapped_example_data
-                        else:
-                            data_item.data = mapped_example_data
-                        self.data[idx] = data_item
+    #                     data_in_memory.append(mapped_item)  
+    #                 elif isinstance(data_item, RootflowDataItem):
+    #                     if targets:
+    #                         data_item.target = mapped_example_data
+    #                     else:
+    #                         data_item.data = mapped_example_data
+    #                     self.data[idx] = data_item
 
-            if len(data_in_memory) > 0:
-                self.data = data_in_memory
+    #         if len(data_in_memory) > 0:
+    #             self.data = data_in_memory
 
-        return self
-
-    def index(self, index: int) -> tuple:
-        data_item = self.data[index]
-        if isinstance(data_item, str):
-            # id ZARR_DELIMITER mbox ZARR_DELIMITER label ZARR_DELIMITER oracle_id ZARR_DELIMITER dataset_id
-            compiled_string = data_item
-            decoded_string = compiled_string.split(self.DATA_DELIMITER)
-            id = decoded_string[0]
-            data = decoded_string[1]
-            target = None 
-        elif isinstance(data_item, RootflowDataItem):
-            id = data_item.id
-            data = data_item.data
-            target = data_item.target
-
-        if id is None:
-            id = f"{type(self).__name__}-{index}"
-        if self.has_data_transforms:
-            data = map_functions(data, self.data_transforms)
-        if self.has_target_transforms:
-            target = map_functions(target, self.target_transforms)
-        return (id, data, target)
+    #     return self
 
     def download(self, directory: str):
         from google.cloud import storage
@@ -205,9 +183,20 @@ class EmailCorpus(RootflowDataset):
         self.root = directory
         file_path = os.path.join(directory, self.FILE_NAME)
         if exists( file_path ):
-            return zarr.open(file_path, mode='r')                              
+            zarr_file = zarr.open(file_path, mode='r+')
+            data_in_memeory = []
+
+            for encoded_string in tqdm(zarr_file, total=len(zarr_file)):
+                decoded_string = encoded_string.split(self.DATA_DELIMITER)
+                data_item = RootflowDataItem(decoded_string[1], id=decoded_string[0], target=None)
+                data_in_memeory.append(data_item)
+
+            return data_in_memeory                              
         else:
             return FileNotFoundError
+
+    def set(self, index, new_data):
+        self.data[index].data = new_data
 
 
 if __name__ == "__main__":
