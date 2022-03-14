@@ -1,4 +1,5 @@
 from rootflow.datasets.emails.email_corpus import EmailCorpus
+from rootflow.datasets.emails.labeled import LabeledEmails
 from rootflow.datasets.emails.utils.map_functions import decode_mbox_email_message
 from rootflow.datasets.base import RootflowDataLoader
 from rootflow.models.nlp.transformers import Tokenizer
@@ -9,13 +10,13 @@ from ast import literal_eval
 
 def mbox_map (mbox_string):
     mbox_message = mailbox.mboxMessage(mbox_string)
-    # text, _, _ = decode_mbox_email_message(mbox_message)
-    # if text == None:
-    #     text = ""
-    return mbox_message
+    text, _, _ = decode_mbox_email_message(mbox_message)
+    if text == None:
+        text = ""
+    return text
 
-
-dataset = EmailCorpus(root='/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails/zarr')
+#dataset = EmailCorpus(root='/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails/zarr')
+dataset = LabeledEmails(root='/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails/zarr')
 
 # print("mapping over the data")
 # start = time.time()
