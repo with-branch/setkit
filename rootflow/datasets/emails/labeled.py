@@ -31,16 +31,25 @@ class LabeledEmails(RootflowDataset):
     LABEL_ENCODING = {"False": 0, "True": 1}
 
     def __init__(
-        self, path_to_zarr_in_cloud: str = "", prefix: str = "", root: str = None, download: bool = None, tasks=None
+        self, path_to_zarr_in_cloud: str = "", prefix: str = "", google_credentials: str = None, root: str = None, download: bool = None, tasks=None
     ) -> None:
         if path_to_zarr_in_cloud != "":
             self.ZARR_CLOUD_PATH = path_to_zarr_in_cloud
         self.prefix = self.ZARR_CLOUD_PATH + prefix
+        self.GOOGLE_CREDENTIALS = google_credentials
         super().__init__(root, download, tasks)
 
     def download(self, directory: str):
         from google.cloud import storage
-        storage_client = storage.Client()
+        try:
+            if self.GOOGLE_CREDENTIALS != None:
+                storage_client = storage.Client.from_service_account_json(self.GOOGLE_CREDENTIALS)
+            else:
+                storage_client = storage.Client(credentials=self.GOOGLE_CREDENTIALS)                
+        except OSError:
+            print("The google storage client errored out because it did not have the correct credentials")
+            print("You must set the GOOGLE_APPLICATION_CREDENTIALS env variable or pass in the file path to the json file containing a service account key")
+            raise OSError
         bucket = storage.Bucket(storage_client, name=self.BUCKET)
 
         zipped_zarr_blob = storage.Blob(self.ZARR_CLOUD_PATH + "/" + self.ZARR_ZIP_NAME, bucket)
