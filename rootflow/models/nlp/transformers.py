@@ -1,9 +1,7 @@
-import gc
 from typing import List, Mapping, Union, Dict
 import os
 import torch
 from torch.nn import Module, ModuleDict, ModuleList
-from pytorch_lightning import LightningModule
 from transformers import AutoModel, AutoTokenizer
 from rootflow.models.auto.model import RootflowAutoModel
 from rootflow.models.nlp.utils import get_sequence_bookends_recursive, listify_tokens
@@ -45,7 +43,7 @@ class Tokenizer:
         return listify_tokens(tokenized)
 
 
-class Transformer(LightningModule):
+class Transformer(Module):
     def __init__(
         self,
         transformer: Union[str, Module],
@@ -79,7 +77,7 @@ class Transformer(LightningModule):
             return transformer_outputs
 
 
-class BinaryClassificationHead(LightningModule):
+class BinaryClassificationHead(Module):
     def __init__(self, input_size, num_classes, dropout: float = 0.1):
         super().__init__()
         self.dense = torch.nn.Linear(input_size, input_size)
@@ -96,7 +94,7 @@ class BinaryClassificationHead(LightningModule):
         return x
 
 
-class ClassificationHead(LightningModule):
+class ClassificationHead(Module):
     def __init__(self, input_size, num_classes, dropout: float = 0.1):
         super().__init__()
         self.dense = torch.nn.Linear(input_size, input_size)
