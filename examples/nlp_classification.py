@@ -5,17 +5,14 @@ from rootflow.models.nlp.transformers import (
     AutoTransformer,
     ClassificationHead,
 )
-from rootflow.training.nlp import FineTuneTrainer
-from rootflow.training import SupervisedTrainer
+from rootflow.training.nlp import ClassificationTrainer, FineTuneTrainer
 from rootflow.training.metrics import F1, Accuracy
 
 n_epochs = 20
 
 dataset = ExampleNLP()
 
-model = AutoTransformer(
-    "roberta-base", tasks=dataset.tasks(), num_training_steps=n_epochs * len(dataset)
-)
+model = AutoTransformer("roberta-base", tasks=dataset.tasks())
 tokenizer = Tokenizer(
     "roberta-base", model.config.max_position_embeddings, mode="split"
 )
@@ -32,7 +29,7 @@ dataset.summary()
 # )
 # fine_tune_trainer.train()
 
-classification_trainer = SupervisedTrainer(
+classification_trainer = ClassificationTrainer(
     "./results",
     model,
     training_dataset=train_set,

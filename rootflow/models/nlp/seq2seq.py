@@ -4,7 +4,7 @@ from typing import Union
 from transformers import AutoModel
 
 
-class TransformerSeq2Seq(Module):
+class TransformerEmbedder(Module):
     def __init__(self, model_name_or_path: Union[str, tuple]) -> None:
         super().__init__()
         if isinstance(model_name_or_path, (tuple, list)):

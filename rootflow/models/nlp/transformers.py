@@ -50,10 +50,8 @@ class Transformer(LightningModule):
         self,
         transformer: Union[str, Module],
         head: Union[Module, ModuleList, ModuleDict] = None,
-        num_training_steps: int = 100000,
     ) -> None:
         super().__init__()
-        self.num_training_steps = num_training_steps
         if isinstance(transformer, str):
             self.transformer = AutoModel.from_pretrained(transformer)
         else:
@@ -80,92 +78,6 @@ class Transformer(LightningModule):
         else:
             return transformer_outputs
 
-    # TODO probably breaks when the number of tasks is greater than one,
-    # since torch.sum does not sum over lists
-    def training_step(self, batch, *args, **kwargs) -> torch.Tensor:
-        print("training_step")
-        print(batch["data"]["input_ids"].shape)
-        batch["data"] = self.transformer(**batch["data"])
-        print("Made it past the transformer")
-        if isinstance(self.head, ModuleDict):
-            return torch.sum(
-                [
-                    task_head.training_step(
-                        {
-                            "id": batch["id"],
-                            "data": batch["data"],
-                            "target": batch["target"][task_name],
-                        }
-                    )
-                    for task_name, task_head in self.head.items()
-                ]
-            )
-        elif isinstance(self.head, ModuleList):
-            return torch.sum(
-                [
-                    task_head.training_step(
-                        {
-                            "id": batch["id"],
-                            "data": batch["data"],
-                            "target": batch["target"][task_idx],
-                        }
-                    )
-                    for task_idx, task_head in enumerate(self.head)
-                ]
-            )
-        elif isinstance(self.head, Module):
-            return self.head.training_step(batch)
-        gc.collect()
-
-    # TODO probably breaks when the number of tasks is greater than one,
-    # since torch.sum does not sum over lists
-    def validation_step(self, batch, *args, **kwargs) -> torch.Tensor:
-        print("validation_step")
-        print(batch["data"]["input_ids"].shape)
-        with torch.no_grad():
-            batch["data"] = self.transformer(**batch["data"])
-            if isinstance(self.head, ModuleDict):
-                return torch.sum(
-                    [
-                        task_head.training_step(
-                            {
-                                "id": batch["id"],
-                                "data": batch["data"],
-                                "target": batch["target"][task_name],
-                            }
-                        )
-                        for task_name, task_head in self.head.items()
-                    ]
-                )
-            elif isinstance(self.head, ModuleList):
-                return torch.sum(
-                    [
-                        task_head.training_step(
-                            {
-                                "id": batch["id"],
-                                "data": batch["data"],
-                                "target": batch["target"][task_idx],
-                            }
-                        )
-                        for task_idx, task_head in enumerate(self.head)
-                    ]
-                )
-            elif isinstance(self.head, Module):
-                return self.head.training_step(batch)
-        gc.collect()
-
-    def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(
-            self.parameters(), lr=self.learning_rate, betas=(0.95, 0.999)
-        )
-        learning_rate_scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer, max_lr=self.learning_rate, total_steps=self.num_training_steps
-        )
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {"scheduler": learning_rate_scheduler, "interval": "step"},
-        }
-
 
 class BinaryClassificationHead(LightningModule):
     def __init__(self, input_size, num_classes, dropout: float = 0.1):
@@ -173,7 +85,6 @@ class BinaryClassificationHead(LightningModule):
         self.dense = torch.nn.Linear(input_size, input_size)
         self.dropout = torch.nn.Dropout(dropout)
         self.out_proj = torch.nn.Linear(input_size, num_classes)
-        self.loss_fn = torch.nn.BCEWithLogitsLoss()
 
     def forward(self, features, **kwargs):
         x = features[0][:, 0, :]
@@ -183,17 +94,6 @@ class BinaryClassificationHead(LightningModule):
         x = self.dropout(x)
         x = self.out_proj(x)
         return x
-
-    def training_step(self, batch, *args, **kwargs) -> torch.Tensor:
-        outputs = torch.squeeze(self.forward(batch["data"]), dim=1)
-        target = batch["target"].float()
-        return self.loss_fn(outputs, target)
-
-    def validation_step(self, batch, *args, **kwargs) -> torch.Tensor:
-        with torch.no_grad():
-            outputs = torch.squeeze(self.forward(batch["data"]), dim=1)
-            target = batch["target"].float()
-            return self.loss_fn(outputs, target)
 
 
 class ClassificationHead(LightningModule):
@@ -215,12 +115,6 @@ class ClassificationHead(LightningModule):
         x = self.out_proj(x)
         return x
 
-    def training_step(self, batch, *args, **kwargs) -> torch.Tensor:
-        outputs = self.forward(batch["data"])
-        target = batch["target"]
-        print(target)
-        return 1.0
-
 
 class AutoTransformer(RootflowAutoModel):
     # TODO Consider refactoring this into a __new__ function instead, so that
@@ -230,7 +124,6 @@ class AutoTransformer(RootflowAutoModel):
         cls: "AutoTransformer",
         transformer: str,
         tasks: List[dict],
-        num_training_steps: int,
     ) -> Transformer:
         super().__new__(cls, tasks=tasks)
         transformer = AutoModel.from_pretrained(transformer)
@@ -251,7 +144,6 @@ class AutoTransformer(RootflowAutoModel):
         return Transformer(
             transformer=transformer,
             head=head,
-            num_training_steps=num_training_steps,
         )
 
     def construct_head_from_task(task: dict, config: dict) -> Module:
