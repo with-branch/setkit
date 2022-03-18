@@ -1,4 +1,3 @@
-from asyncio import tasks
 from rootflow.datasets.examples import ExampleNLP
 from rootflow.models.nlp.transformers import (
     Tokenizer,
@@ -12,19 +11,11 @@ from rootflow.training.metrics import F1, Accuracy
 
 n_epochs = 20
 
-dataset = (
-    ExampleNLP()
-)  # Automatically downloads the data if necessary (places in the rootflow package)
+dataset = ExampleNLP()
 
-# classification_head = ClassificationHead(input_size=768, num_classes=2, dropout=0.1)
-# model = Transformer(
-#     "roberta-base", head=classification_head, num_training_steps=n_epochs * len(dataset)
-# )
-# Or alternatively
 model = AutoTransformer(
     "roberta-base", tasks=dataset.tasks(), num_training_steps=n_epochs * len(dataset)
 )
-
 tokenizer = Tokenizer(
     "roberta-base", model.config.max_position_embeddings, mode="split"
 )

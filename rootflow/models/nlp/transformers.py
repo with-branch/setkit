@@ -48,13 +48,16 @@ class Tokenizer:
 class Transformer(LightningModule):
     def __init__(
         self,
-        model_name_or_path: str,
+        transformer: Union[str, Module],
         head: Union[Module, ModuleList, ModuleDict] = None,
         num_training_steps: int = 100000,
     ) -> None:
         super().__init__()
         self.num_training_steps = num_training_steps
-        self.transformer = AutoModel.from_pretrained(model_name_or_path)
+        if isinstance(transformer, str):
+            self.transformer = AutoModel.from_pretrained(transformer)
+        else:
+            self.transformer = transformer
         self.config = self.transformer.config
         assert isinstance(
             head, (Module, ModuleList, ModuleDict, None)
@@ -225,14 +228,13 @@ class AutoTransformer(RootflowAutoModel):
     # also seems like a good option)
     def __new__(
         cls: "AutoTransformer",
-        model_name_or_path: str,
+        transformer: str,
         tasks: List[dict],
         num_training_steps: int,
     ) -> Transformer:
         super().__new__(cls, tasks=tasks)
-        temp_transformer = AutoModel.from_pretrained(model_name_or_path)
-        config = temp_transformer.config
-        del temp_transformer
+        transformer = AutoModel.from_pretrained(transformer)
+        config = transformer.config
         if len(tasks) == 1:
             head = AutoTransformer.construct_head_from_task(
                 task=tasks[0], config=config
@@ -247,26 +249,26 @@ class AutoTransformer(RootflowAutoModel):
                 }
             )
         return Transformer(
-            model_name_or_path=model_name_or_path,
+            transformer=transformer,
             head=head,
             num_training_steps=num_training_steps,
         )
 
     def construct_head_from_task(task: dict, config: dict) -> Module:
         task_type, task_shape = task["type"], task["shape"]
-        if task_type is "classification":
+        if task_type == "classification":
             return ClassificationHead(
                 config.hidden_size,
                 task_shape,
                 dropout=config.hidden_dropout_prob,
             )
-        elif task_type is "binary":
+        elif task_type == "binary":
             return BinaryClassificationHead(
                 config.hidden_size,
                 task_shape,
                 dropout=config.hidden_dropout_prob,
             )
-        elif task_type is "regression":
+        elif task_type == "regression":
             raise NotImplementedError("Cannot make a regression head")
         else:
             raise ValueError(f"{task_type} is not a recognized task type")
