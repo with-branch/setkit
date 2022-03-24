@@ -4,18 +4,26 @@ import numpy as np
 from rootflow.models.embedding.base import Embedder
 
 
-# TODO Generate the layer sizes for the VAE in a more disciplined way.
 class VAE(Embedder):
-    def __init__(self, input_size: int, embedding_size: int) -> None:
-        intermediate_size = int(np.mean(input_size, embedding_size))
-        self.encoder = torch.nn.Sequential(
-            torch.nn.Linear(input_size, input_size),
-            torch.nn.Linear(input_size, intermediate_size),
-            torch.nn.Linear(intermediate_size, embedding_size),
-        )
-        self.decoder = torch.nn.Sequential(
-            torch.nn.Linear(embedding_size, embedding_size),
-            torch.nn.Linear(embedding_size, intermediate_size),
-            torch.nn.Linear(intermediate_size, input_size),
-        )
-        super().__init__(self.encoder, self.decoder)
+    def __init__(self, encoder, decoder, use_softmax=False):
+        self.softmax = torch.nn.Softmax(dim=1)
+        self.use_softmax = use_softmax
+        super().__init__(encoder=encoder, decoder=decoder)
+
+    def forward(self, x):
+        mean, log_variance = self.encode(x)
+        z = self.reparameterize(mean, log_variance)
+        logits = self.decoder(z)
+        return logits
+
+    def encode(self, x):
+        z = self.encoder(x)
+        mean, var = torch.split(z, z.shape[1] // 2, dim=1)
+        return mean, var
+
+    def reparameterize(self, mean, logvar):
+        eps = torch.normal(torch.zeros(mean.shape), 1).to(mean.device)
+        eps = eps * torch.exp(logvar * 0.5) + mean
+        if self.use_softmax:
+            eps = self.softmax(eps)
+        return eps
