@@ -1,18 +1,24 @@
 from typing import List, Tuple
 
 import numpy as np
+import statsmodels.api as sm
 
 
 def maximally_constrained_vector_products(
     initial_vector: np.ndarray,
     constraints: List[Tuple[np.ndarray, int]],
-    threshold: float = 0.5,
+    weights: List[float]
 ):
     # Return a new vector, such that the maximum number of constraints are true
     # It is NOT guaranteed that all of the contraints are satisfiable.
     # It is also possible/practically certain that the maximum constraints will
     # identify a subspace instead of a point, in which case we would like to select
     # the point which is closest to the current vector from within that subspace.
+
+    for i, constraint in enumerate(constraints):
+        
+
+
     constraint_vector, constraint_output = constraints[0]
     # Solving a constraint means that the following will be true
     ((initial_vector * constraint_vector) > threshold) == constraint_output
