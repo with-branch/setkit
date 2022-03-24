@@ -1,7 +1,9 @@
 from typing import List, Tuple
 
 import numpy as np
-import statsmodels.api as sm
+from pulp import LpVariable, LpProblem, LpMinimize, lpSum, value
+
+MAX_VALUE_WEIGHT = 10
 
 
 def maximally_constrained_vector_products(
@@ -14,15 +16,15 @@ def maximally_constrained_vector_products(
     # It is also possible/practically certain that the maximum constraints will
     # identify a subspace instead of a point, in which case we would like to select
     # the point which is closest to the current vector from within that subspace.
+    variables = [ LpVariable((f"value_{i}"), 0, 2*MAX_VALUE_WEIGHT) for i in range(len(constraints[0][0])) ]
+    helper_variables = []
+    prob = LpProblem("optimize_initial_vector_using_least_squares", LpMinimize)
 
-    for i, constraint in enumerate(constraints):
-        
+    prob += lpSum(weights[i]*(abs((MAX_VALUE_WEIGHT + constraints[i][1]) - lpSum((variables[x]*constraints[i][0][x]) for x in range(len(variables))))) for i in range(len(constraints)))
+    status = prob.solve()
 
-
-    constraint_vector, constraint_output = constraints[0]
-    # Solving a constraint means that the following will be true
-    ((initial_vector * constraint_vector) > threshold) == constraint_output
-    return initial_vector
+    optimized_vector = [value(variables[i]) - 10 for i in len(variables)]
+    return optimized_vector
 
 
 if __name__ == "__main__":
@@ -31,5 +33,5 @@ if __name__ == "__main__":
 
     current_embedding = np.array([-0.5, 1.0, 0.3, 0.7])
     next_embedding = maximally_constrained_vector_products(
-        current_embedding, constraints
+        current_embedding, constraints, [1 for _ in range(len(constraints))]
     )

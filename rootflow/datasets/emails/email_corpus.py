@@ -12,7 +12,7 @@ import zarr
 
 class EmailCorpus(RootflowDataset):
     BUCKET = "rootflow"
-    ZARR_CLOUD_PATH = "datasets/email-notification-zarr/mbox-no-attachments"
+    ZARR_CLOUD_PATH = "datasets/emails/zarr/mbox-no-attachments"
     ZARR_ZIP_NAME = "emails.zip"
     ZARR_NAME = "emails.zarr"
     CHUNK_SIZE = 50
@@ -71,5 +71,5 @@ if __name__ == "__main__":
     # import cProfile
     # cProfile.run("EmailCorpus()")
 
-    dataset = EmailCorpus(root='/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails/zarr', download=True, google_credentials="/home/dallin/Branch/service_account/information_gate/potent-zodiac-323320-271d19d4df2e.json")
+    dataset = EmailCorpus(root='/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails_zarr/zarr', download=True, google_credentials="/home/dallin/Branch/service_account/information_gate/potent-zodiac-323320-271d19d4df2e.json")
 
