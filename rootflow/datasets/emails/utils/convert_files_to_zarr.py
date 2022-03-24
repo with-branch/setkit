@@ -7,8 +7,8 @@ from tqdm import tqdm
 import json
 import zarr
 
-LOCAL_FILE_PATH="/home/dallin/Branch/Datasets/Emails"
-DESTINATION_FILE_PATH="/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails/zarr/emails.zarr"
+LOCAL_FILE_PATH="/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails"
+DESTINATION_FILE_PATH="/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails_zarr/zarr/emails.zarr"
 ZARR_DELIMITER="$$$data-separator$$$"
 CHUNK_SIZE=50
 
@@ -33,7 +33,7 @@ file_load_error_counter=0
 
 #loop through all json files, format the data inside, and append the formatted
 #data to the zarr
-for i, file in tqdm(enumerate(os.listdir(LOCAL_FILE_PATH)), total=num_files):
+for i, file in tqdm(enumerate(os.listdir(LOCAL_FILE_PATH)), total= len(os.listdir(LOCAL_FILE_PATH))):
 
     path_to_file = os.path.join(LOCAL_FILE_PATH, file)
     if isfile(path_to_file):
@@ -82,6 +82,7 @@ for i, file in tqdm(enumerate(os.listdir(LOCAL_FILE_PATH)), total=num_files):
                     store_index = 1               
 
             except json.JSONDecodeError:
+                print(path_to_file)
                 file_load_error_counter += 1
 
             if i == num_files - 1:
