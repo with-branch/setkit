@@ -24,7 +24,7 @@ class LabeledEmails(RootflowDataset):
     """
 
     BUCKET = "rootflow"
-    ZARR_CLOUD_PATH = "datasets/email-notification-zarr/mbox-no-attachments"
+    ZARR_CLOUD_PATH = "datasets/emails/zarr/mbox-no-attachments"
     ZARR_ZIP_NAME = "emails.zip"
     ZARR_NAME = "emails.zarr"
     CHUNK_SIZE = 50
