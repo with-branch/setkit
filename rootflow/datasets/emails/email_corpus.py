@@ -31,23 +31,29 @@ class EmailCorpus(RootflowDataset):
         super().__init__(root, download, tasks)
 
     def download(self, directory: str):
-        from google.cloud import storage
-
         try:
-            if self.GOOGLE_CREDENTIALS != None:
+            from google.cloud import storage
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError(
+                "EmailCorpus requires the use of google cloud storage to download, which is not installed in the current environment.\nTo install, run `pip install --upgrade google-cloud-storage`."
+            )
+
+        if self.GOOGLE_CREDENTIALS is None:
+            try:
+                storage_client = storage.Client(credentials=self.GOOGLE_CREDENTIALS)
+            except OSError:
+                raise OSError(
+                    "Could not authenticate google storage client for downloading EmailCorpus.\nGOOGLE_APPLICATION_CREDENTIALS environment variable is not set.\nEither set the GOOGLE_APPLICATION_CREDENTIALS environment variable or set `google_credentials` as the file path to a json file containing an authenticated service account key"
+                )
+        else:
+            try:
                 storage_client = storage.Client.from_service_account_json(
                     self.GOOGLE_CREDENTIALS
                 )
-            else:
-                storage_client = storage.Client(credentials=self.GOOGLE_CREDENTIALS)
-        except OSError:
-            print(
-                "The google storage client errored out because it did not have the correct credentials"
-            )
-            print(
-                "You must set the GOOGLE_APPLICATION_CREDENTIALS env variable or pass in the file path to the json file containing a service account key"
-            )
-            raise OSError
+            except OSError:
+                raise OSError(
+                    f"Could not authenticate google storage client for downloading EmailCorpus.\nReceived an invalid path for `google_credentials`. Could not find the file {self.GOOGLE_CREDENTIALS}"
+                )
 
         bucket = storage.Bucket(storage_client, name=self.BUCKET)
 
@@ -56,7 +62,7 @@ class EmailCorpus(RootflowDataset):
         )
         path_to_zip = os.path.join(directory, "emails.zip")
 
-        print("Downloading from Cloud Storage")
+        print("Downloading EmailCorpus dataset from Cloud Storage")
         zipped_zarr_blob.download_to_filename(path_to_zip)
 
         with zipfile.ZipFile(path_to_zip, "r") as zip_file_ref:
@@ -89,7 +95,6 @@ if __name__ == "__main__":
     # cProfile.run("EmailCorpus()")
 
     dataset = EmailCorpus(
-        root="/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails/zarr",
-        download=True,
-        google_credentials="/home/dallin/Branch/service_account/information_gate/potent-zodiac-323320-271d19d4df2e.json",
+        root="data",
+        # google_credentials="~/Downloads/potent-zodiac-323320-47310fed5432.json",
     )
