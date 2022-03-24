@@ -9,6 +9,7 @@ import zarr
 
 from rootflow.datasets.base.dataset import RootflowDatasetView
 from rootflow.datasets.base import RootflowDataset, RootflowDataItem
+from rootflow import __location__ as ROOTFLOW_LOCATION
 
 
 class LabeledEmails(RootflowDataset):
@@ -43,6 +44,10 @@ class LabeledEmails(RootflowDataset):
             self.ZARR_CLOUD_PATH = path_to_zarr_in_cloud
         self.prefix = self.ZARR_CLOUD_PATH + prefix
         self.GOOGLE_CREDENTIALS = google_credentials
+        if root is None:
+            root = os.path.join(
+                ROOTFLOW_LOCATION, "datasets/data", "EmailCorpus", "data"
+            )
         super().__init__(root, download, tasks)
 
     def download(self, directory: str):
@@ -128,3 +133,4 @@ class LabeledEmails(RootflowDataset):
 
 if __name__ == "__main__":
     dataset = LabeledEmails()
+    dataset[0]
