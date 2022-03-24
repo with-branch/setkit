@@ -84,7 +84,7 @@ class LabeledEmails(RootflowDataset):
 
             return data_items
         else:
-            return FileNotFoundError
+            raise FileNotFoundError
 
     def split_by_oracle_id(self) -> List[RootflowDataset]:
         """Splits dataset into a list of datasets.
