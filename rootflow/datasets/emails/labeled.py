@@ -9,6 +9,7 @@ import zarr
 
 from rootflow.datasets.base.dataset import RootflowDatasetView
 from rootflow.datasets.base import RootflowDataset, RootflowDataItem
+from rootflow import __location__ as ROOTFLOW_LOCATION
 
 
 class LabeledEmails(RootflowDataset):
@@ -31,35 +32,54 @@ class LabeledEmails(RootflowDataset):
     LABEL_ENCODING = {"False": 0, "True": 1}
 
     def __init__(
-        self, path_to_zarr_in_cloud: str = "", prefix: str = "", google_credentials: str = None, root: str = None, download: bool = None, tasks=None
+        self,
+        path_to_zarr_in_cloud: str = "",
+        prefix: str = "",
+        google_credentials: str = None,
+        root: str = None,
+        download: bool = None,
+        tasks=None,
     ) -> None:
         if path_to_zarr_in_cloud != "":
             self.ZARR_CLOUD_PATH = path_to_zarr_in_cloud
         self.prefix = self.ZARR_CLOUD_PATH + prefix
         self.GOOGLE_CREDENTIALS = google_credentials
+        if root is None:
+            root = os.path.join(
+                ROOTFLOW_LOCATION, "datasets/data", "EmailCorpus", "data"
+            )
         super().__init__(root, download, tasks)
 
     def download(self, directory: str):
         from google.cloud import storage
+
         try:
             if self.GOOGLE_CREDENTIALS != None:
-                storage_client = storage.Client.from_service_account_json(self.GOOGLE_CREDENTIALS)
+                storage_client = storage.Client.from_service_account_json(
+                    self.GOOGLE_CREDENTIALS
+                )
             else:
-                storage_client = storage.Client(credentials=self.GOOGLE_CREDENTIALS)                
+                storage_client = storage.Client(credentials=self.GOOGLE_CREDENTIALS)
         except OSError:
-            print("The google storage client errored out because it did not have the correct credentials")
-            print("You must set the GOOGLE_APPLICATION_CREDENTIALS env variable or pass in the file path to the json file containing a service account key")
+            print(
+                "The google storage client errored out because it did not have the correct credentials"
+            )
+            print(
+                "You must set the GOOGLE_APPLICATION_CREDENTIALS env variable or pass in the file path to the json file containing a service account key"
+            )
             raise OSError
         bucket = storage.Bucket(storage_client, name=self.BUCKET)
 
-        zipped_zarr_blob = storage.Blob(self.ZARR_CLOUD_PATH + "/" + self.ZARR_ZIP_NAME, bucket)
-        path_to_zip  = os.path.join(directory, "emails.zip")
+        zipped_zarr_blob = storage.Blob(
+            self.ZARR_CLOUD_PATH + "/" + self.ZARR_ZIP_NAME, bucket
+        )
+        path_to_zip = os.path.join(directory, "emails.zip")
 
         print("Downloading from Cloud Storage")
         zipped_zarr_blob.download_to_filename(path_to_zip)
 
-        with zipfile.ZipFile(path_to_zip, 'r') as zip_file_ref:
-            print("Extracting the zarr file") 
+        with zipfile.ZipFile(path_to_zip, "r") as zip_file_ref:
+            print("Extracting the zarr file")
             zip_file_ref.extractall(directory)
 
     def prepare_data(self, directory: str) -> List["RootflowDataItem"]:
@@ -113,3 +133,4 @@ class LabeledEmails(RootflowDataset):
 
 if __name__ == "__main__":
     dataset = LabeledEmails()
+    dataset[0]

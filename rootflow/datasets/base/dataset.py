@@ -93,18 +93,27 @@ class RootflowDataset(FunctionalDataset):
             try:
                 self.data = self.prepare_data(root)
             except FileNotFoundError:
-                logging.warning(f"Data could not be loaded from {root}.")
+                logging.warning(
+                    f"Dataset {type(self).__name__} could not be loaded from location '{root}'."
+                )
                 download = True
 
         if download is True:
-            logging.info(f"Downloading {type(self).__name__} data to location {root}.")
+            logging.info(
+                f"Downloading {type(self).__name__} data to location '{root}'."
+            )
             if not os.path.exists(root):
                 os.makedirs(root)
             self.download(root)
             self.data = self.prepare_data(root)
         elif download is False:
-            self.data = self.prepare_data(root)
-        logging.info(f"Loaded {type(self).__name__} from {root}.")
+            try:
+                self.data = self.prepare_data(root)
+            except FileNotFoundError:
+                raise FileNotFoundError(
+                    f"Could not load the data for {type(self).__name__} from '{root}'\nMake sure that the data is located at '{root}'.\nAlso consider setting download to `True`."
+                )
+        logging.info(f"Loaded {type(self).__name__} from '{root}'.")
 
         self.setup()
         logging.info(f"Setup {type(self).__name__}.")

@@ -1,5 +1,3 @@
-from decimal import InvalidContext
-from genericpath import isfile
 import os
 import zipfile
 
@@ -9,6 +7,7 @@ from rootflow.datasets.base import RootflowDataset, RootflowDataItem
 from os.path import exists
 from tqdm import tqdm
 import zarr
+
 
 class EmailCorpus(RootflowDataset):
     BUCKET = "rootflow"
@@ -26,27 +25,46 @@ class EmailCorpus(RootflowDataset):
         super().__init__(root, download, tasks)
 
     def download(self, directory: str):
-        from google.cloud import storage      
         try:
-            if self.GOOGLE_CREDENTIALS != None:
-                storage_client = storage.Client.from_service_account_json(self.GOOGLE_CREDENTIALS)
-            else:
-                storage_client = storage.Client(credentials=self.GOOGLE_CREDENTIALS)                
-        except OSError:
-            print("The google storage client errored out because it did not have the correct credentials")
-            print("You must set the GOOGLE_APPLICATION_CREDENTIALS env variable or pass in the file path to the json file containing a service account key")
-            raise OSError
-        
+            from google.cloud import storage
+            from google.auth.exceptions import DefaultCredentialsError
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError(
+                "EmailCorpus requires the use of google cloud storage to download, which is not installed in the current environment.\nTo install, run `pip install --upgrade google-cloud-storage`."
+            )
+
+        if self.GOOGLE_CREDENTIALS is None:
+            try:
+                storage_client = storage.Client(credentials=self.GOOGLE_CREDENTIALS)
+            except DefaultCredentialsError:
+                raise ValueError(
+                    "Could not authenticate google storage client for downloading EmailCorpus.\nGOOGLE_APPLICATION_CREDENTIALS environment variable is not set.\nEither set the GOOGLE_APPLICATION_CREDENTIALS environment variable or set `google_credentials` as the file path to a json file containing an authenticated service account key"
+                )
+        else:
+            try:
+                storage_client = storage.Client.from_service_account_json(
+                    self.GOOGLE_CREDENTIALS
+                )
+            except OSError:
+                raise OSError(
+                    f"Could not authenticate google storage client for downloading EmailCorpus.\nReceived an invalid path for `google_credentials`. Could not find the file {self.GOOGLE_CREDENTIALS}"
+                )
+
         bucket = storage.Bucket(storage_client, name=self.BUCKET)
 
-        zipped_zarr_blob = storage.Blob(self.ZARR_CLOUD_PATH + "/" + self.ZARR_ZIP_NAME, bucket)
-        path_to_zip  = os.path.join(directory, "emails.zip")
+        zarr_blob_name = self.ZARR_CLOUD_PATH + "/" + self.ZARR_ZIP_NAME
+        zipped_zarr_blob = bucket.get_blob(zarr_blob_name)
+        path_to_zip = os.path.join(directory, "emails.zip")
 
-        print("Downloading from Cloud Storage")
-        zipped_zarr_blob.download_to_filename(path_to_zip)
+        print("Downloading EmailCorpus dataset from Cloud Storage...")
+        with open(path_to_zip, "wb") as zip_file:
+            with tqdm.wrapattr(
+                zip_file, "write", total=zipped_zarr_blob.size
+            ) as tqdm_file_obj:
+                storage_client.download_blob_to_file(zipped_zarr_blob, tqdm_file_obj)
 
-        with zipfile.ZipFile(path_to_zip, 'r') as zip_file_ref:
-            print("Extracting the zarr file")
+        with zipfile.ZipFile(path_to_zip, "r") as zip_file_ref:
+            print("Extracting EmailCorpus zarr file...")
             zip_file_ref.extractall(directory)
 
     def prepare_data(self, directory: str) -> List["RootflowDataItem"]:
@@ -60,7 +78,8 @@ class EmailCorpus(RootflowDataset):
                 data_in_memeory = []
 
                 #zarr format
-                # id ZARR_DELIMITER mbox ZARR_DELIMITER label ZARR_DELIMITER oracle_id 
+                # id ZARR_DELIMITER mbox ZARR_DELIMITER label ZARR_DELIMITER oracle_id
+                print("Loading EmailCorpus dataset...") 
                 for encoded_string in tqdm(zarr_file, total=len(zarr_file)):
                     decoded_string = encoded_string.split(self.DATA_DELIMITER)
                     data_item = RootflowDataItem(decoded_string[1], id=decoded_string[0], target=None)
@@ -75,5 +94,8 @@ if __name__ == "__main__":
     # import cProfile
     # cProfile.run("EmailCorpus()")
 
-    dataset = EmailCorpus(root='/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails_zarr/zarr', download=True, google_credentials="/home/dallin/Branch/service_account/information_gate/potent-zodiac-323320-271d19d4df2e.json")
-
+    dataset = EmailCorpus(
+        root="/mnt/3913be04-1a62-4a3d-b5c4-b804c51bfe73/branch/datasets/emails_zarr/zarr",
+        download=True,
+        google_credentials="/home/dallin/Branch/service_account/information_gate/potent-zodiac-323320-271d19d4df2e.json",
+    )
