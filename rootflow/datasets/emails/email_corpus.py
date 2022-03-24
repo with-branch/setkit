@@ -33,6 +33,7 @@ class EmailCorpus(RootflowDataset):
     def download(self, directory: str):
         try:
             from google.cloud import storage
+            from google.auth.exceptions import DefaultCredentialsError
         except ModuleNotFoundError:
             raise ModuleNotFoundError(
                 "EmailCorpus requires the use of google cloud storage to download, which is not installed in the current environment.\nTo install, run `pip install --upgrade google-cloud-storage`."
@@ -41,8 +42,8 @@ class EmailCorpus(RootflowDataset):
         if self.GOOGLE_CREDENTIALS is None:
             try:
                 storage_client = storage.Client(credentials=self.GOOGLE_CREDENTIALS)
-            except OSError:
-                raise OSError(
+            except DefaultCredentialsError:
+                raise ValueError(
                     "Could not authenticate google storage client for downloading EmailCorpus.\nGOOGLE_APPLICATION_CREDENTIALS environment variable is not set.\nEither set the GOOGLE_APPLICATION_CREDENTIALS environment variable or set `google_credentials` as the file path to a json file containing an authenticated service account key"
                 )
         else:
@@ -57,16 +58,19 @@ class EmailCorpus(RootflowDataset):
 
         bucket = storage.Bucket(storage_client, name=self.BUCKET)
 
-        zipped_zarr_blob = storage.Blob(
-            self.ZARR_CLOUD_PATH + "/" + self.ZARR_ZIP_NAME, bucket
-        )
+        zarr_blob_name = self.ZARR_CLOUD_PATH + "/" + self.ZARR_ZIP_NAME
+        zipped_zarr_blob = bucket.get_blob(zarr_blob_name)
         path_to_zip = os.path.join(directory, "emails.zip")
 
-        print("Downloading EmailCorpus dataset from Cloud Storage")
-        zipped_zarr_blob.download_to_filename(path_to_zip)
+        print("Downloading EmailCorpus dataset from Cloud Storage...")
+        with open(path_to_zip, "wb") as zip_file:
+            with tqdm.wrapattr(
+                zip_file, "write", total=zipped_zarr_blob.size
+            ) as tqdm_file_obj:
+                storage_client.download_blob_to_file(zipped_zarr_blob, tqdm_file_obj)
 
         with zipfile.ZipFile(path_to_zip, "r") as zip_file_ref:
-            print("Extracting the zarr file")
+            print("Extracting EmailCorpus zarr file...")
             zip_file_ref.extractall(directory)
 
     def prepare_data(self, directory: str) -> List["RootflowDataItem"]:
@@ -78,6 +82,7 @@ class EmailCorpus(RootflowDataset):
 
             # zarr format
             # id ZARR_DELIMITER mbox ZARR_DELIMITER label ZARR_DELIMITER oracle_id
+            print("Loading EmailCorpus dataset...")
             for encoded_string in tqdm(zarr_file, total=len(zarr_file)):
                 decoded_string = encoded_string.split(self.DATA_DELIMITER)
                 data_item = RootflowDataItem(
@@ -96,5 +101,6 @@ if __name__ == "__main__":
 
     dataset = EmailCorpus(
         root="data",
-        # google_credentials="~/Downloads/potent-zodiac-323320-47310fed5432.json",
+        # download=True,
+        google_credentials="/home/tanner/Downloads/potent-zodiac-323320-47310fed5432.json",
     )
