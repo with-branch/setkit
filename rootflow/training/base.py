@@ -2,6 +2,7 @@ from typing import Callable, List, Union
 
 from torch.nn import Module
 from torch.optim import Optimizer, AdamW
+from torch.utils.data import Dataset, DataLoader
 
 from rootflow.datasets.base import RootflowDataset
 
@@ -11,8 +12,8 @@ class RootflowTrainer:
         self,
         results_directory: str,
         model: Module,
-        training_dataset: RootflowDataset,
-        validataion_dataset: RootflowDataset,
+        training_dataset: Union[Dataset, RootflowDataset],
+        validation_dataset: Union[Dataset, RootflowDataset],
         metrics: List[Callable] = None,
         learning_rate: float = None,
         epochs: int = None,
@@ -24,14 +25,9 @@ class RootflowTrainer:
         self.results_directory = results_directory
         self.model = model
         self.training_dataset = training_dataset
-        self.validation_dataset = validataion_dataset
+        self.validation_dataset = validation_dataset
         self.metrics = metrics
         self.config = kwargs
 
     def train(self) -> None:
         raise NotImplementedError
-
-    def configure_optimizers(self) -> Optimizer:
-        return AdamW(
-            self.model.parameters(),
-        )

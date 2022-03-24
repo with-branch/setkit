@@ -14,5 +14,5 @@ class NestedEmbedder(Module):
         intermediate_encoding = self.outer.encoder(x)
         embedding = self.inner.encoder(intermediate_encoding)
         intermediate_decoding = self.inner.decoder(embedding)
-        return (embedding, self.outer.decoder(intermediate_decoding))
+        return (self.outer.decoder(intermediate_decoding), embedding)
         # Somehow return all hidden states

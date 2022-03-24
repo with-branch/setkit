@@ -8,6 +8,5 @@ from rootflow.models.auto.utils import verify_tasks
 
 
 class RootflowAutoModel(LightningModule):
-    def __init__(self, tasks: List[dict]) -> None:
-        super().__init__()
+    def __new__(cls, tasks: List[dict], *args, **kwargs):
         verify_tasks(tasks)

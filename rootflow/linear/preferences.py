@@ -14,6 +14,11 @@ def maximally_constrained_vector_products(
     # It is also possible/practically certain that the maximum constraints will
     # identify a subspace instead of a point, in which case we would like to select
     # the point which is closest to the current vector from within that subspace.
+
+    for i, constraint in enumerate(constraints):
+        
+
+
     constraint_vector, constraint_output = constraints[0]
     # Solving a constraint means that the following will be true
     ((initial_vector * constraint_vector) > threshold) == constraint_output
