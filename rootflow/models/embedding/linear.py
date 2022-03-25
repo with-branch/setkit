@@ -1,37 +1,20 @@
+import numpy as np
 import torch
+
 from rootflow.models.embedding.base import Embedder
 
-
+# TODO Generate the layer sizes for the linear embedder in a more disciplined way.
 class LinearEmbedder(Embedder):
-    def __init__(self, input_dimensions, num_archetypes) -> None:
-        raise NotImplementedError  # This structure is just a placeholder
-        encoder = torch.nn.Sequential(
-            torch.nn.Linear(input_dimensions, input_dimensions),
-            torch.nn.ReLU(),
-            torch.nn.Linear(input_dimensions, num_archetypes),
+    def __init__(self, input_size: int, embedding_size: int) -> None:
+        intermediate_size = int(np.mean(input_size, embedding_size))
+        self.encoder = torch.nn.Sequential(
+            torch.nn.Linear(input_size, input_size),
+            torch.nn.Linear(input_size, intermediate_size),
+            torch.nn.Linear(intermediate_size, embedding_size),
         )
-        decoder = torch.nn.Sequential(
-            torch.nn.Linear(num_archetypes, input_dimensions),
-            torch.nn.ReLU(),
-            torch.nn.Linear(input_dimensions, input_dimensions),
-            torch.nn.ReLU(),
+        self.decoder = torch.nn.Sequential(
+            torch.nn.Linear(embedding_size, embedding_size),
+            torch.nn.Linear(embedding_size, intermediate_size),
+            torch.nn.Linear(intermediate_size, input_size),
         )
-        super().__init__()
-
-
-class LinearArchetypal(Embedder):
-    def __init__(self, input_dimensions, num_archetypes) -> None:
-        raise NotImplementedError  # This structure is just a placeholder
-        encoder = torch.nn.Sequential(
-            torch.nn.Linear(input_dimensions, input_dimensions),
-            torch.nn.ReLU(),
-            torch.nn.Linear(input_dimensions, num_archetypes),
-            torch.nn.Softmax(),
-        )
-        decoder = torch.nn.Sequential(
-            torch.nn.Linear(num_archetypes, input_dimensions),
-            torch.nn.ReLU(),
-            torch.nn.Linear(input_dimensions, input_dimensions),
-            torch.nn.ReLU(),
-        )
-        super().__init__()
+        super().__init__(self.encoder, self.decoder)
