@@ -226,6 +226,10 @@ class RootflowDataset(FunctionalDataset):
             AssertionError: If a batched function does not return a list of the same
                 length as its inputs.
         """
+        assert hasattr(
+            function, "__call__"
+        ), f"Cannot use a value of type {type(function)} to map over dataset. Parameter `function` must be a callable object."
+
         if targets:
             attribute = "target"
         else:
@@ -242,10 +246,10 @@ class RootflowDataset(FunctionalDataset):
                 )
                 assert isinstance(mapped_batch_data, Sequence) and not isinstance(
                     mapped_batch_data, str
-                ), "Map function does not return a sequence over batch"
+                ), f"Map function {function.__name__} does not return a sequence over batch"
                 assert len(mapped_batch_data) == len(
                     batch
-                ), "Map function does not return batch of same length as input"
+                ), f"Map function {function.__name__} does not return batch of same length as input"
                 for idx, mapped_example_data in zip(
                     range(slice.start, slice.stop), mapped_batch_data
                 ):
