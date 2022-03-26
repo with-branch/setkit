@@ -2,20 +2,7 @@
 A framework of models, datasets and other utilities for training branch ML models.
 
 # Installation
-Apparently this is necessary because torch has some problems.
-pip install setuptools==59.5.0
-
-Clone the repository, install the required packages and then run
-```
-pip install .
-```
-from the repos root directory.
-
-# Training
-Our plan for training provider is currently in flux. We are looking into `pytorch-lightning` and also considering writing our trainers in native `pytorch`
-
-# Hyperparameter Tuning
-We will use Optuna for the hyperparameter tuning.
+TODO: Add additional details for installation
 
 # Contributing
 When contributing there are a couple things to keep in mind. Pull requests and contributions must adhere to the following set of criteria:
