@@ -1,5 +1,5 @@
-# rootflow
-A framework of models, datasets and other utilities for training branch ML models.
+# rootflow-datasets
+Base classes, tools and utilities for rootflow datasets. 
 
 # Installation
 TODO: Add additional details for installation
