@@ -1,0 +1,82 @@
+Allow mapping over dataset views. Apply the changes to only the indices within the view.
+
+Essentially there are three types of datasets
+GeneratorDataset
+	Multithreadable
+	Does not need indices
+	Does not need a prepare_data, instead needs a nextitem
+	Cannot map
+	Should be able to be read into a CollectionDataset (maybe by using slices?)
+IterableDataset
+	Not multithreadable
+	Should have a prepare data, which returns an iterator
+	Use when you cannot load all of the iterator into memory, large file
+	Does it need a download?
+	Only needs getitem
+	Cannot use setitem
+	Cannot map
+	Can use transforms
+	Should be able to be read into a CollectionDataset (maybe by using slices?)
+CollectionDataset
+	Multithreadable
+	Should have getitem and setitem
+	Implements map, using getitem and setitem
+	
+	FileDataset
+		Does it need a prepare_data? (Not if it's an unsup dataset)
+			What should prepare data return? A special data item?
+		How does the user connect the labels?
+		Must implement a getitem
+		
+If an iterable dataset returns an iterator, how is that
+different than prepare_data for a collection dataset? They
+are pretty related, no?
+
+How do you map over a FileDataset?
+	Should we just have a StreamDataset?
+	This would be for both files and urls and uris etc.
+	Basically it would house a location, and the user
+	would implement a way of loading from that uri.
+
+RootflowDataset
+	IndexableDataset, torch:Datasets
+		StreamDataset
+		MappableDataset
+			CollectionDataset
+			CollectionDatasetView
+			CollectionDatasetConcat
+	NonIndexableDataset, torch:IterableDataset
+		IterableDataset
+		GeneratorDataset
+			Make sure that this guy multithreads properly
+	
+
+What are the iterable dataset use cases?
+Streaming data -> Generator or Collection depending
+Synthetic data -> GeneratorDataset
+Reading a file (Think lines of text) -> IterableDataset
+	Because you read the file sequentially, you cannot
+	parralellize the data.
+
+What about saving a dataset? And loading a saved dataset?
+
+
+GeneratorDataset:
+	download -> None
+X	yeild_item -> DataItem
+No item ids?
+	
+StreamDataset:
+	download -> None
+X	prepare_data -> List[address]
+X	fetch_item -> DataItem
+	
+CollectionDataset:
+	download -> None
+X	prepare_data -> List[DataItem]
+	get_item -> DataItem
+	DataItem -> set_item
+	
+IterableDataset:
+	download -> None
+X	prepare_data -> iterator[DataItem]

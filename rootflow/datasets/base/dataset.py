@@ -1,550 +1,170 @@
-"""Base dataset classes for rootflow
+"""Base class for rootflow datasets.
 
-Houses RootflowDataset and the associated classes RootflowDatasetView and
-ConcatRootflowDatasetView
+Implements the basics of rootflow's functional API for rootflow datasets and
+dataset-like objects. (For example RootflowDatasetView)
 """
 
-from typing import (
-    Callable,
-    Hashable,
-    Mapping,
-    Sequence,
-    Tuple,
-    List,
-    Union,
-    Any,
-    Iterator,
-)
-import logging
+from typing import Callable, Sequence, Tuple, List, Union
 import os
-from rootflow import __location__ as ROOTFLOW_LOCATION
-from rootflow.datasets.base.functional import FunctionalDataset
-from rootflow.datasets.base.utils import (
-    batch_enumerate,
-    map_functions,
-    get_unique,
-    infer_task_from_targets,
+import random
+from torch.utils.data import Dataset
+
+import rootflow.datasets.base.collection as rootflow_datasets
+from rootflow.datasets.base.utils import get_nested_data_types
+from rootflow.datasets.base.display_utils import (
+    format_docstring,
+    format_examples_tabular,
+    format_statistics,
 )
 
 
-class RootflowDataset(FunctionalDataset):
-    """Abstract class for a rootflow dataset.
+class RootflowDataset(Dataset):
+    """Abstract class for rootflow's functional dataset API.
 
-    Implments boilerplate downloading, loading and indexing functionality. Extends
-    :class:`FunctionalDataset`, and provides all of the same functional API for
-    interacting with the dataset. Except in special cases, this functionality does not
-    need to be implemented if you are extending RootflowDataset, and will be available
-    by default.
-
-    Supported Functionality:
-        slicing: Can be sliced to generate a new dataset, supports lists and slices.
-        `map` and `transform`: Supports transforms and mapping functions over data.
-        filtering and `where`: New datasets can be created using conditional functions.
-        addition: New datasets may be created using the addition operator, which will
-            concatenate two datasets together.
-        statistics and summaries: Dynamically calculate statistics on the dataset, and
-            display useful summaries about its contents.
-
-    Only one function is necessary to extend a RootflowDataset. That is the method
-    :meth:`prepare_data`. If you wish to dynamically download the dataset, then the
-    :meth:`download` method should also be implemented. For any additional steps which
-    your dataset needs to perform, you may also implement the :meth:`setup` method.
+    Implements shared behavior for RootflowDataset, RootflowDatasetView, and
+    ConcatRootflowDatasetView. This includes things like slicable indexing,
+    and formatted display functionality.
     """
 
-    def __init__(
-        self, root: str = None, download: bool = None, tasks: List[dict] = []
-    ) -> None:
-        """Creates an instance of a rootflow dataset.
+    def __init__(self) -> None:
+        self._data_transforms = []
+        self._target_transforms = []
+        self._has_data_transforms = False
+        self._has_target_transforms = False
 
-        Attempts to load the dataset from root using the :meth:`prepare_data` method.
-        Should this fail to find the given file, it will attempt to download the data
-        using the :meth:`download` method, after which it will try once again to load
-        the data.
+    def __iter__(self):
+        """Iterates over dataset
 
-        If download is `True` the data will always be downloaded, even if it is already
-        present. Alternatively if it is `False`, then no download is allowed,
-        regardless. In the case of the default, `None`, the data will be downloaded
-        only if :meth:`prepare_data` fails.
+        Yields:
+            dict: A dictionary containing an `"id"`, `"data"` and a `"target"`
+        """
+        raise NotImplementedError
 
-        If a root is not provided, the dataset will default to using the
-        the following path:
-            <path to rootflow installation>/datasets/data/<dataset class name>/data
+    def split(
+        self, validation_proportion: float = 0.1, seed: int = None
+    ) -> Tuple[
+        "rootflow_datasets.RootflowDatasetView", "rootflow_datasets.RootflowDatasetView"
+    ]:
+        """Splits the dataset into a train set and a validation set.
 
-        If the dataset is succesfully loaded, it will then attempt to infer the task
-        type, given the data targets, if tasks are not provided.
+        Will return two dataset views of the dataset. Each view is randomly sampled
+        from the dataset, and they do not contain any of the same elements.
 
         Args:
-            root (:obj:`str`, optional): Where the data is or should be stored.
-            download (:obj:`bool`, optional): Whether the dataset should download the
-                data.
-            tasks: (:type:`List[bool]`, optional): Dataset task names, types and shapes.
+            validation_proportion (float): The proportion of the total dataset size
+                to contain in the validation set.
+            seed (:obj:`int`, optional): An optional seed for the randomization.
+
+        Returns:
+            Tuple[RootflowDatasetView, RootflowDatasetView]: A tuple containing,
+                respectively, the train set and the validation set.
         """
-        super().__init__()
-        self.DEFAULT_DIRECTORY = os.path.join(
-            ROOTFLOW_LOCATION, "datasets/data", type(self).__name__, "data"
+        dataset_length = len(self)
+        indices = list(range(dataset_length))
+        random.Random(seed).shuffle(indices)
+        n_test = int(dataset_length * validation_proportion)
+        return (
+            rootflow_datasets.RootflowDatasetView(self, indices[n_test:], sorted=False),
+            rootflow_datasets.RootflowDatasetView(self, indices[:n_test], sorted=False),
         )
-        if root is None:
-            logging.info(
-                f"{type(self).__name__} root is not set, using the default data root of {self.DEFAULT_DIRECTORY}"
-            )
-            root = self.DEFAULT_DIRECTORY
 
-        if download is None:
-            try:
-                self.data = self.prepare_data(root)
-            except FileNotFoundError:
-                logging.warning(
-                    f"Dataset {type(self).__name__} could not be loaded from location '{root}'."
-                )
-                download = True
+    def transform(
+        self, function: Union[Callable, List[Callable]], targets: bool = False
+    ) -> Union[
+        "rootflow_datasets.RootflowDataset", "rootflow_datasets.RootflowDatasetView"
+    ]:
+        """Applies a transform to the dataset
 
-        if download is True:
-            logging.info(
-                f"Downloading {type(self).__name__} data to location '{root}'."
-            )
-            if not os.path.exists(root):
-                os.makedirs(root)
-            self.download(root)
-            self.data = self.prepare_data(root)
-        elif download is False:
-            try:
-                self.data = self.prepare_data(root)
-            except FileNotFoundError:
-                raise FileNotFoundError(
-                    f"Could not load the data for {type(self).__name__} from '{root}'\nMake sure that the data is located at '{root}'.\nAlso consider setting download to `True`."
-                )
-        logging.info(f"Loaded {type(self).__name__} from '{root}'.")
+        Adds a new transform to the dataset, after all current transforms. The new
+        transform will be run each time an item is selected from this dataset.
+        (Useful for random augmentation, for example).
 
-        self.setup()
-        logging.info(f"Setup {type(self).__name__}.")
-
-        if tasks is not None and len(tasks) == 0:
-            tasks = self._infer_tasks()
-            logging.info(f"Tasks not specified, setting automatically")
-        self._tasks = tasks
-
-    def prepare_data(self, directory: str) -> List["RootflowDataItem"]:
-        """Prepares data for a rootflow dataset.
-
-        Loads the data from a directory path and returns a list of
-        :class:`RootflowDataItem`s, one for each dataset example in dataset.
+        :meth:`transform` returns self to better support a functional API. Keep in
+        mind that it is not truly functional, and that the dataset is modified in
+        place for space, storage and speed concerns.
 
         Args:
-            directory (str): The directory where we should look for our data.
+            function (Union[Callable, List[Callable]]): The transform function or
+                list of functions you would like to add.
+            targets (:obj:`bool`, optional): Wether this transform should apply
+                to the dataset targets.
 
         Returns:
-            List[RootflowDataItem]: The loaded data items.
+            Union[RootflowDataset, RootflowDatasetView]: Returns `self`.
         """
-        raise NotImplementedError
-
-    def download(self, directory: str) -> None:
-        """Downloads the data for the dataset to a specified directory.
-
-        Args:
-            directory (str): Directory to download the data to.
-        """
-        raise NotImplementedError
-
-    def setup(self):
-        """Performs additional setup steps for the dataset"""
-        pass
-
-    def tasks(self):
-        """Returns a list of dataset tasks
-
-        Returns a list containing each task for the dataset. The tasks are formatted
-        as a dictionary with the following fields:
-            {
-                "name" : <task name> (str),
-                "type" : <task type> (str),
-                "shape" : <task shape> (tuple)
-            }
-
-        Returns:
-            List[dict]: The list of tasks associated with the dataset.
-        """
-        return self._tasks
-
-    def _infer_tasks(self):
-        """Splits targets and infers task information"""
-        example_targets = self.index(0)[2]
-        if example_targets is None:
-            return None
-        if isinstance(example_targets, Mapping):
-            tasks = []
-
-            def multitask_generator(task_name):
-                for item in self:
-                    yield item["target"][task_name]
-
-            for task_name in example_targets.keys():
-                generator = multitask_generator(task_name)
-                task_type, task_shape = infer_task_from_targets(generator)
-                tasks.append(
-                    {"name": task_name, "type": task_type, "shape": task_shape}
-                )
-            return tasks
-        else:
-
-            def single_task_generator():
-                for item in self:
-                    yield item["target"]
-
-            task_type, task_shape = infer_task_from_targets(single_task_generator())
-            return [{"name": "task", "type": task_type, "shape": task_shape}]
-
-    # TODO: Decide how to handle map edge cases
-    # Represents some dangerous interior mutability
-    # Does not play well with views (What should we change and not change. Do we allow different parts of the dataset to have different data?)
-    # Does not play well with datasets who need to have data be memmaped or hdf5ed from disk
-
-    # While splitting out the dataset into three lists, (ids, data, targets) might
-    # make batch mapping faster because we can do true slice assignment, it may also
-    # decrease the load speed for indexing the dataset (cache locality of the different
-    # item members for the given index) TODO: Test this
-    def map(
-        self,
-        function: Union[Callable, List[Callable]],
-        targets: bool = False,
-        batch_size: int = None,
-    ) -> Union["RootflowDataset", "RootflowDatasetView"]:
-        """Maps a function over the dataset.
-
-        Applies some given function(s) to each dataset example contained within the
-        dataset. Returns `self` to assist with the functional API, but mutates internal
-        state so is not functional at all.
-
-        Args:
-            function (Union[Callable, List[Callable]]): The function or functions you
-                would like to map over the dataset.
-            targets (:obj:`bool`, optional): Whether the functions should be mapped
-                over the data item targets, instead of the data.
-            batch_size (:obj:`int`, optional): A batch size, if the functions to map
-                support or require batches of inputs.
-
-        Raises:
-            AssertionError: If a batched function does not return a list of the same
-                length as its inputs.
-        """
-        assert hasattr(
-            function, "__call__"
-        ), f"Cannot use a value of type {type(function)} to map over dataset. Parameter `function` must be a callable object."
-
+        if not isinstance(function, (tuple, list)):
+            function = [function]
         if targets:
-            attribute = "target"
+            self._target_transforms += function
+            self._has_target_transforms = True
         else:
-            attribute = "data"
-
-        if batch_size is None:
-            for idx, data_item in enumerate(self.data):
-                setattr(data_item, attribute, function(getattr(data_item, attribute)))
-                self.data[idx] = data_item
-        else:
-            for slice, batch in batch_enumerate(self.data, batch_size):
-                mapped_batch_data = function(
-                    [getattr(data_item, attribute) for data_item in batch]
-                )
-                assert isinstance(mapped_batch_data, Sequence) and not isinstance(
-                    mapped_batch_data, str
-                ), f"Map function {function.__name__} does not return a sequence over batch"
-                assert len(mapped_batch_data) == len(
-                    batch
-                ), f"Map function {function.__name__} does not return batch of same length as input"
-                for idx, mapped_example_data in zip(
-                    range(slice.start, slice.stop), mapped_batch_data
-                ):
-                    data_item = self.data[idx]
-                    setattr(data_item, attribute, mapped_example_data)
-                    self.data[idx] = data_item
-
+            self._data_transforms += function
+            self._has_data_transforms = True
         return self
 
-    def __len__(self) -> int:
-        """Gets the length of the dataset."""
-        return len(self.data)
-
-    def index(self, index: int) -> tuple:
-        """Gets a single data example
-
-        Retrieves a single data example at the given index. Since :meth:`index` is used
-        internally, it does not pack the result into a dict, instead returning a tuple.
-        (This is prefered for performance)
-
-        Args:
-            index (int): The index of the item to retrieve.
-
-        Returns:
-            tuple: A tuple of three items, respectively, the id of the data item, the
-                data content of the item, and the target of the data item.
-        """
-        data_item = self.data[index]
-        id, data, target = data_item.id, data_item.data, data_item.target
-        if id is None:
-            id = f"{type(self).__name__}-{index}"
-        if self.has_data_transforms:
-            data = map_functions(data, self.data_transforms)
-        if self.has_target_transforms:
-            target = map_functions(target, self.target_transforms)
-        return (id, data, target)
-
-
-# TODO Add custom getattr for the dataset views so that if there is a custom
-# attribute on a dataset, a view of that dataset will have the same attribute
-class RootflowDatasetView(FunctionalDataset):
-    """Noncopy subset of a dataset.
-
-    A dataset view is a low cost abstraction which allows for interacting with a
-    subset of the dataset without duplication of data. Like :class:`RootflowDataset`
-    the view extends :class:`FunctionalDataset`, and provides all of the same
-    functional API. (i.e. You can map, transform, take slices, etc)
-    """
-
-    def __init__(
-        self,
-        dataset: FunctionalDataset,
-        view_indices: List[int],
-        sorted: bool = True,
-    ) -> None:
-        """Creates an new view of a dataset.
-
-        Args:
-            dataset (FunctionalDataset): The dataset which we are taking a view of.
-            view_indices (List[int]): Indices corresponding to which data items from
-                the dataset we would like to include in the view.
-            sorted (:obj:`bool`, optional): Wether to sort the indices so that the
-                view maintains ordering when iterating.
-        """
-        super().__init__()
-        self.dataset = dataset
-        unique_indices = get_unique(view_indices, ordered=sorted)
-        self.data_indices = unique_indices
-
-    def tasks(self) -> List[dict]:
-        """Returns a list of dataset tasks.
-
-        Returns a list containing each task for the dataset. The tasks are formatted
-        as a dictionary with the following fields:
-            {
-                "name" : <task name> (str),
-                "type" : <task type> (str),
-                "shape" : <task shape> (tuple)
-            }
-
-        Returns:
-            List[dict]: The list of tasks associated with the dataset.
-        """
-        return self.dataset.tasks()
-
-    def map(self, function: Callable, targets: bool = False, batch_size: int = None):
-        raise AttributeError("Cannot map over a dataset view!")
-
-    def __len__(self):
-        """Returns the length of the view"""
-        return len(self.data_indices)
-
-    def index(self, index):
-        """Gets a single data example.
-
-        Retrieves a single data example at the given index from the underlying dataset.
-        This may be a :class:`RootflowDataset` or another :class:`RootflowDatasetView`,
-        potentially even a :class:`ConcatRootflowDatasetView`.
-
-        Args:
-            index (int): The index of the item to retrieve.
-
-        Returns:
-            tuple: A tuple of three items, respectively, the id of the data item, the
-                data content of the item, and the target of the data item.
-        """
-        id, data, target = self.dataset.index(self.data_indices[index])
-        if self.has_data_transforms:
-            data = map_functions(data, self.data_transforms)
-        if self.has_target_transforms:
-            target = map_functions(target, self.target_transforms)
-        return (id, data, target)
-
-
-class ConcatRootflowDatasetView(FunctionalDataset):
-    """Noncopy concatenation of two datasets.
-
-    A concat dataset view is a low cost abstraction which allows for interacting with a
-    concatenation of two datasets without duplication of data. Like
-    :class:`RootflowDataset` the view extends :class:`FunctionalDataset`, and provides
-    all of the same functional API. (i.e. You can map, transform, take slices, etc)
-    """
-
-    def __init__(
-        self,
-        datatset_one: FunctionalDataset,
-        dataset_two: FunctionalDataset,
-    ):
-        """Creates an new concatenated view of two datasets.
-
-        Combines the two given datasets to form a concatenated dataset. Indexing with
-        i < len(`dataset_one`) will access the first dataset and indexing
-        i >= len(`dataset_one`) will access the second dataset. Creating the combination
-        will fail if either of the datasets are not an instance of
-        :class:`FunctionalDataset` or if the datasets each have the same task with
-        different shapes or types.
-
-        Args:
-            dataset_one (FunctionalDataset): The first component of our new dataset.
-            dataset_two (FunctionalDataset): The second component of our new dataset.
-        """
-        assert isinstance(datatset_one, FunctionalDataset) and isinstance(
-            dataset_two, FunctionalDataset
-        ), f"Cannot concatenate {type(datatset_one)} and {type(dataset_two)}!"
-        super().__init__()
-        self.dataset_one = datatset_one
-        self.dataset_two = dataset_two
-        self.transition_point = len(datatset_one)
-
-        self._tasks = ConcatRootflowDatasetView._combine_tasks(
-            datatset_one.tasks(), dataset_two.tasks()
-        )
-
     def tasks(self):
-        """Returns a list of dataset tasks for the two datasets.
+        """Returns dataset target tasks"""
+        raise NotImplementedError
 
-        Returns a list containing each unique task for the datasets. The tasks are
-        formatted as a dictionary with the following fields:
-            {
-                "name" : <task name> (str),
-                "type" : <task type> (str),
-                "shape" : <task shape> (tuple)
-            }
+    def stats(self):
+        """Gets common statistics for dataset.
 
-        Returns:
-            List[dict]: The list of tasks associated with the datasets.
-        """
-        return self._tasks
-
-    # TODO This function is doing a bit too much maybe should be refactored
-    # and some of the functionality moved into utils
-    def _combine_tasks(task_list_one, task_list_two):
-        """Returns the unique tasks from two lists of tasks"""
-        tasks = []
-
-        task_names_one = {task["name"] for task in task_list_one}
-        task_names_two = {task["name"] for task in task_list_two}
-        combined_names = task_names_one | task_names_two
-
-        for task_name in combined_names:
-            if task_name in task_names_one and task_name in task_names_two:
-                overlapping_task_one = [
-                    task for task in task_list_one if task["name"] == task_name
-                ][0]
-                overlapping_task_two = [
-                    task for task in task_list_one if task["name"] == task_name
-                ][0]
-
-                task_type_one = overlapping_task_one["type"]
-                task_type_two = overlapping_task_two["type"]
-                if not task_type_one == task_type_two:
-                    raise ValueError(
-                        f"Found two tasks with name {task_name} but types {task_type_one} and {task_type_two}"
-                    )
-
-                shape_one = overlapping_task_one["shape"]
-                shape_two = overlapping_task_two["shape"]
-                if not shape_one == shape_two:
-                    raise ValueError(
-                        f"Found two tasks with name {task_name} and type {task_type_one} but shapes {shape_one} and {shape_two}"
-                    )
-
-                tasks.append(overlapping_task_one)
-            elif task_name in task_names_one:
-                task = [task for task in task_list_one if task["name"] == task_name][0]
-                tasks.append(task)
-            elif task_name in task_names_two:
-                task = [task for task in task_list_two if task["name"] == task_name][0]
-                tasks.append(task)
-        return tasks
-
-    def map(self, function: Callable, targets: bool = False, batch_size: int = None):
-        raise AttributeError("Cannot map over concatenated datasets!")
-
-    def __len__(self):
-        """Returns the total length of the concatenated datasets."""
-        return len(self.dataset_one) + len(self.dataset_two)
-
-    def index(self, index):
-        """Gets a single data example.
-
-        Retrieves a single data example at the given index from the underlying datasets.
-        These may be a :class:`RootflowDataset` or another :class:`RootflowDatasetView`,
-        potentially even a :class:`ConcatRootflowDatasetView`.
-
-        Args:
-            index (int): The index of the item to retrieve.
+        Calculates a set of common and useful statistics for the dataset. May attempt
+        to decide dynamically which statistics to include, depending on the data and
+        target types.
 
         Returns:
-            tuple: A tuple of three items, respectively, the id of the data item, the
-                data content of the item, and the target of the data item.
+            dict: A dictionary of the collected statistics.
         """
-        if index < self.transition_point:
-            selected_dataset = self.dataset_one
-        else:
-            selected_dataset = self.dataset_two
-            index -= self.transition_point
-        id, data, target = selected_dataset.index(index)
-        if self.has_data_transforms:
-            data = map_functions(data, self.data_transforms)
-        if self.has_target_transforms:
-            target = map_functions(target, self.target_transforms)
-        return (id, data, target)
+        data_example = self[0]["data"]
+        target_example = self[0]["target"]
+        tasks = self.tasks()
+        if tasks is not None and len(tasks) == 1:
+            tasks = tasks[0]
+        return {
+            "length": len(self),
+            "data_types": get_nested_data_types(data_example),
+            "target_types": get_nested_data_types(target_example),
+            "tasks": tasks,
+        }
 
+    def examples(self, num_examples: int = 5) -> List[dict]:
+        """Returns multiple examples from the dataset
 
-class RootflowDataItem:
-    """A single data example for rootflow datasets.
-
-    A container class for data in rootflow datasets, intended to provide a rigid API
-    on which the :class:`FunctionalDataset`s can depened. Behaviorally, it is similar
-    to a named tuple, since the only available slots are `id`, `data` and `target`.
-
-    Attributes:
-        id (:obj:`Hashable`, optional): A unique id for the dataset example.
-        data (Any): The data of the dataset example.
-        target (:obj:`Any`, optional): The task target(s) for the dataset example.
-    """
-
-    __slots__ = ("id", "data", "target")
-
-    # TODO We may want to unpack lists with only a single item for mappings and nested lists as well
-    def __init__(self, data: Any, id: Hashable = None, target: Any = None) -> None:
-        """Creates a new data item.
+        Gets a list of examples from the dataset, up to the specified number or the
+        size of the dataset, if the requested amount is too large.
 
         Args:
-            id (:obj:`Hashable`, optional): A unique id for the dataset example.
-            data (Any): The data of the dataset example.
-            target (:obj:`Any`, optional): The task target(s) for the dataset example
+            num_examples (int): The number of examples to get.
+
+        Returns:
+            List[dict]: A list of examples from the dataset.
         """
-        self.data = data
-        self.id = id
+        num_examples = min(len(self), num_examples)
+        return [self[i] for i in range(num_examples)]
 
-        if isinstance(target, Sequence) and not isinstance(target, str):
-            target_length = len(target)
-            if target_length == 0:
-                target = None
-            elif target_length == 1:
-                target = target[0]
-        self.target = target
+    def summary(self, output_width: int = None):
+        """Print a formatted summary of the dataset
 
-    def __getitem__(self, index: int):
-        if index == 0:
-            return self.id
-        elif index == 1:
-            return self.data
-        elif index == 2:
-            return self.target
+        Collects the dataset docstring, statistics and some examples, then prints them
+        in a formatted summary to the console.
+
+        Args:
+            output_width (:obj:`int`, optional): Optional control for the width of the
+                formatted output. Defaults to 150 or the console width, whichever is
+                smaller.
+        """
+        terminal_size = os.get_terminal_size()
+        if output_width is None:
+            description_width = min(150, terminal_size.columns)
         else:
-            raise ValueError(f"Invalid index {index} for RootflowDataItem")
+            description_width = output_width
 
-    def __iter__(self) -> Iterator[Tuple[Hashable, Any, Any]]:
-        """Returns an iterator to support tuple unpacking
+        print(f"{type(self).__name__}:")
+        print(format_docstring(type(self).__doc__, description_width, indent=True))
 
-        For example:
-            >>> data_item = RootflowDataItem([1, 2, 3], id = 'item', target = 0)
-            >>> id, data, target = data_item
-        """
-        return iter((self.id, self.data, self.target))
+        print("\nStats:")
+        print(format_statistics(self.stats(), description_width, indent=True))
+
+        print("\nExamples:")
+        print(format_examples_tabular(self.examples(), description_width, indent=True))

@@ -9,7 +9,7 @@ import os
 import random
 from torch.utils.data import Dataset
 
-import rootflow.datasets.base.dataset as rootflow_datasets
+import rootflow.datasets.base.collection as rootflow_datasets
 from rootflow.datasets.base.utils import get_nested_data_types
 from rootflow.datasets.base.display_utils import (
     format_docstring,
@@ -18,7 +18,7 @@ from rootflow.datasets.base.display_utils import (
 )
 
 
-class FunctionalDataset(Dataset):
+class FunctionalCollectionDataset(Dataset):
     """Abstract class for rootflow's functional dataset API.
 
     Implements shared behavior for RootflowDataset, RootflowDatasetView, and
