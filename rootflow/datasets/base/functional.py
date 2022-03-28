@@ -78,10 +78,6 @@ class FunctionalCollectionDataset(Dataset):
             id, data, target = self.index(index)
             yield {"id": id, "data": data, "target": target}
 
-    def index(self, index: int) -> tuple:
-        """Gets a data item at the index"""
-        raise NotImplementedError
-
     def split(
         self, validation_proportion: float = 0.1, seed: int = None
     ) -> Tuple[

@@ -18,7 +18,10 @@ from typing import (
 import logging
 import os
 from rootflow import __location__ as ROOTFLOW_LOCATION
-from rootflow.datasets.base.functional import FunctionalDataset
+from rootflow.datasets.base.functional import (
+    FunctionalCollectionDataset as FunctionalDataset,
+)
+from rootflow.datasets.base.item import DataItem
 from rootflow.datasets.base.utils import (
     batch_enumerate,
     map_functions,
@@ -115,15 +118,14 @@ class CollectionDataset(FunctionalDataset):
                 )
         logging.info(f"Loaded {type(self).__name__} from '{root}'.")
 
-        self.setup()
-        logging.info(f"Setup {type(self).__name__}.")
-
+        # TODO: Tasks should be normally cached, instead of preloaded. There will be
+        # many circumstances where they are not necessary, and this could be annoying
         if tasks is not None and len(tasks) == 0:
             tasks = self._infer_tasks()
             logging.info(f"Tasks not specified, setting automatically")
         self._tasks = tasks
 
-    def prepare_data(self, directory: str) -> List["CollectionDataItem"]:
+    def prepare_data(self, directory: str) -> List[DataItem]:
         """Prepares data for a rootflow dataset.
 
         Loads the data from a directory path and returns a list of
@@ -133,7 +135,7 @@ class CollectionDataset(FunctionalDataset):
             directory (str): The directory where we should look for our data.
 
         Returns:
-            List[CollectionDataItem]: The loaded data items.
+            List[DataItem]: The loaded data items.
         """
         raise NotImplementedError
 
@@ -188,11 +190,6 @@ class CollectionDataset(FunctionalDataset):
 
             task_type, task_shape = infer_task_from_targets(single_task_generator())
             return [{"name": "task", "type": task_type, "shape": task_shape}]
-
-    # TODO: Decide how to handle map edge cases
-    # Represents some dangerous interior mutability
-    # Does not play well with views (What should we change and not change. Do we allow different parts of the dataset to have different data?)
-    # Does not play well with datasets who need to have data be memmaped or hdf5ed from disk
 
     # While splitting out the dataset into three lists, (ids, data, targets) might
     # make batch mapping faster because we can do true slice assignment, it may also
@@ -489,58 +486,3 @@ class ConcatCollectionDatasetView(FunctionalDataset):
         if self.has_target_transforms:
             target = map_functions(target, self.target_transforms)
         return (id, data, target)
-
-
-class CollectionDataItem:
-    """A single data example for rootflow datasets.
-
-    A container class for data in rootflow datasets, intended to provide a rigid API
-    on which the :class:`FunctionalDataset`s can depened. Behaviorally, it is similar
-    to a named tuple, since the only available slots are `id`, `data` and `target`.
-
-    Attributes:
-        id (:obj:`Hashable`, optional): A unique id for the dataset example.
-        data (Any): The data of the dataset example.
-        target (:obj:`Any`, optional): The task target(s) for the dataset example.
-    """
-
-    __slots__ = ("id", "data", "target")
-
-    # TODO We may want to unpack lists with only a single item for mappings and nested lists as well
-    def __init__(self, data: Any, id: Hashable = None, target: Any = None) -> None:
-        """Creates a new data item.
-
-        Args:
-            id (:obj:`Hashable`, optional): A unique id for the dataset example.
-            data (Any): The data of the dataset example.
-            target (:obj:`Any`, optional): The task target(s) for the dataset example
-        """
-        self.data = data
-        self.id = id
-
-        if isinstance(target, Sequence) and not isinstance(target, str):
-            target_length = len(target)
-            if target_length == 0:
-                target = None
-            elif target_length == 1:
-                target = target[0]
-        self.target = target
-
-    def __getitem__(self, index: int):
-        if index == 0:
-            return self.id
-        elif index == 1:
-            return self.data
-        elif index == 2:
-            return self.target
-        else:
-            raise ValueError(f"Invalid index {index} for CollectionDataItem")
-
-    def __iter__(self) -> Iterator[Tuple[Hashable, Any, Any]]:
-        """Returns an iterator to support tuple unpacking
-
-        For example:
-            >>> data_item = CollectionDataItem([1, 2, 3], id = 'item', target = 0)
-            >>> id, data, target = data_item
-        """
-        return iter((self.id, self.data, self.target))
