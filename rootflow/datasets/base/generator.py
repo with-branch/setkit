@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Iterator, Tuple
 
 from torch.utils.data import IterableDataset
 from rootflow.datasets.base.item import DataItem
@@ -12,6 +12,16 @@ class GeneratorDataset(IterableDataset):
 
     def __len__(self) -> int:
         return self._length
+
+    def split(
+        self, validation_proportion: float = 0.1
+    ) -> Tuple[
+        'GeneratorDataset', 'GeneratorDataset'
+    ]: 
+        generator_dataset_type = type(self)
+        validation_length = int(self.length * validation_proportion)
+
+        return generator_dataset_type(length = self.length - validation_length), generator_dataset_type(validation_length)
 
     def __iter__(self) -> Iterator[dict]:
         for _ in range(self._length):
