@@ -1,7 +1,7 @@
 from typing import Callable, Optional, Sequence
 
 from torch.utils.data import Dataset, DataLoader, Sampler
-from rootflow.datasets.base.utils import default_collate_without_key
+from setkit.datasets.base.utils import default_collate_without_key
 
 
 class RootflowDataLoader(DataLoader):

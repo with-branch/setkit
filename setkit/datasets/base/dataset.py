@@ -17,9 +17,9 @@ from typing import (
 )
 import logging
 import os
-from rootflow import __location__ as ROOTFLOW_LOCATION
-from rootflow.datasets.base.functional import FunctionalDataset
-from rootflow.datasets.base.utils import (
+from setkit import __location__ as ROOTFLOW_LOCATION
+from setkit.datasets.base.functional import FunctionalDataset
+from setkit.datasets.base.utils import (
     batch_enumerate,
     map_functions,
     get_unique,

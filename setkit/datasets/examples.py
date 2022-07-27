@@ -2,7 +2,7 @@ from typing import List
 
 import os
 import csv
-from rootflow.datasets.base.dataset import RootflowDataset, RootflowDataItem
+from setkit.datasets.base.dataset import RootflowDataset, RootflowDataItem
 
 
 class ExampleTabular(RootflowDataset):
