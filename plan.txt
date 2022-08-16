@@ -8,3 +8,9 @@ Dataset:
     
     get_item(self, index: int) -> DataItem
     set_item(self, index: int, new_data_item: DataItem) -> DataItem
+
+
+:Caching Strategy:
+    Dataset fits in cache limit
+        Cache every item
+    Dataset does not fit in cache limit
