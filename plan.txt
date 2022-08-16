@@ -1,0 +1,10 @@
+Have a single class with adaptive behaviour. The class will have the following overrideable functions.
+
+Dataset should keep track of its size to dynamically allocate the cache.
+
+Dataset:
+    get_data_paths(self, directory: str) -> List[str] (Convert to unique list of strings, use as cache hash)
+    prepare_data(self, paths: List[str]) -> Generator[Union[DataItem, Any]]
+    
+    get_item(self, index: int) -> DataItem
+    set_item(self, index: int, new_data_item: DataItem) -> DataItem

@@ -8,17 +8,15 @@ README_FILE = open(os.path.join(PACKAGE_ROOT, "README.md"), "r").read()
 
 if __name__ == "__main__":
     setup(
-        name="rootflow-datasets",
+        name="setkit",
         version="0.0.0",
-        description="Base classes, tools and utilities for rootflow datasets. ",
+        description="Smooth and easy ways to create highly functional datasets",
         long_description=README_FILE,
         long_description_content_type="text/markdown",
-        url="https://github.com/with-branch/rootflow-datasets",
-        author="GenerallyIntelligent",
-        author_email="tannersims@generallyintelligent.me",
+        url="https://github.com/with-branch/setkit",
+        author="HesitantlyHuman",
+        author_email="tannersims@hesitantlyhuman.com",
         license="MIT",
         packages=find_packages(),
-        install_requires=[
-            "torch >=1.10.0, <2.0.0",
-        ],
+        install_requires=[],
     )

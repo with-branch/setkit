@@ -1,4 +1,4 @@
-from rootflow.datasets.base.collection import RootflowDataItem
+from setkit.datasets.base.collection import RootflowDataItem
 import pytest
 
 

@@ -80,3 +80,54 @@ X	prepare_data -> List[DataItem]
 IterableDataset:
 	download -> None
 X	prepare_data -> iterator[DataItem]
+
+-----------------------------------------------
+-----------------------------------------------
+
+Open Lyrics
+	How do we collect k number of files for n data items, when k < n?
+	
+Dataset
+	item_paths
+	prepare_data (if has, then load in memory) (allows List[Any], converts Any to data of List[DataItem])
+	next_item
+	get_item
+	set_item
+	map (only works if we have prepare_data)
+
+----------------------------------------------
+----------------------------------------------
+rootflow-datasets:
+
+If `prepare_data` uses yeild, the syntax becomes easier for the user
+Also, then I control the loading loop, and can place tqdm in there
+
+Using a zarr is about 6.4x faster. Is it worth it to cache zarrs by default?
+This would basically mean that using a rootflow dataset would double your
+disk usage, which is not very good.
+
+If we add metadata, does that mean we need to map over it?
+
+Datasets I want to support:
+	Open Lyrics
+		~25.2 GB on local disk
+		Option to load into RAM or load from disk
+		Known number of items (could load in chunks)
+	Crypto Regulations Dataset
+		JSON files in Drive.
+		Probably too large to download at some point
+		Known number of items
+	Labeled Email Dataset
+		14GB
+		Zarr file
+		Needs metadata for filtering
+	Hatespace Ironmarch Dataset
+		Small ~
+	Hatecomp Datasets
+	Convolutional Salesman Dataset
+		Can be generated on the fly
+		Should support pregenerating a large number (somehow generate and cache? Then we serve new items as fast as we are able, while still keeping up with the model?)
+	Memes Dataset
+	Minecraft Dataset
+	Audio Sample Comparison Dataset
+	Synth Food Dataset
