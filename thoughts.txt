@@ -131,3 +131,6 @@ Datasets I want to support:
 	Minecraft Dataset
 	Audio Sample Comparison Dataset
 	Synth Food Dataset
+
+Notes:
+	If Dataset veiws have a __getattr__ which points to the underlying dataset, they should also implement __setstate__ and __getstate__ for multiprocessing to correctly pickle
