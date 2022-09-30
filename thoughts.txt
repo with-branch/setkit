@@ -136,3 +136,4 @@ Notes:
 	If Dataset veiws have a __getattr__ which points to the underlying dataset, they should also implement __setstate__ and __getstate__ for multiprocessing to correctly pickle
 	Consider not returning `None` when targets are not present in a dataset, it can be annoying and reduces compatibility with the pytorch DataLoader class.
 	Return split as a dictionary, since this is how most practitioners will be familiar with it.
+	Remember: Optimize performance with the DataLoader, not just as a standalone iterator
