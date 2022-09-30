@@ -134,3 +134,4 @@ Datasets I want to support:
 
 Notes:
 	If Dataset veiws have a __getattr__ which points to the underlying dataset, they should also implement __setstate__ and __getstate__ for multiprocessing to correctly pickle
+	Consider not returning `None` when targets are not present in a dataset, it can be annoying and reduces compatibility with the pytorch DataLoader class.
